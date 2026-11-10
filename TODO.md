@@ -28,7 +28,7 @@ prefix `TT_`, Harmony id `josh9817.tidythreads`. The plan's placeholders map lik
 ## Current state
 
 - **Next step:** Phase 3 (T5, T6, T9, T10, T11). Hand-off: `docs/handoff/20261110-2336-phases-3-to-5.md`.
-- **Last run:** 2026-11-10 T2: 1/1 PASS, 0 new errors (`docs/test-runs.md`).
+- **Last run:** 2026-11-10 T2 rerun without the bed-link check: 1/1 PASS, 0 new errors (`docs/test-runs.md`).
 - **Environment (checked 2026-11-10):** game `1.6.4871 rev598`; Steam running; `dotnet`, `inkscape`, `Xvfb`, `xdotool`,
   `import` present. Workshop: Harmony (2009463077), ASF (3033901359) and VFE (1718190143) are installed;
   Dressers Hold Clothing (Continued) (2584894865) is not. `tools/vanilla.sh init` is done (`.tools/decomp`, 9213
@@ -38,7 +38,7 @@ prefix `TT_`, Harmony id `josh9817.tidythreads`. The plan's placeholders map lik
 ## Decisions (user, 2026-11-10)
 
 These settle the open questions raised by the verification. They are in the living plan doc's Decisions section
-(rev 21) and its snapshot.
+(rev 23) and its snapshot.
 
 1. **Folder layout: root `Defs/` and `Patches/`**, not the plan's `1.6/Defs` and `1.6/Patches`. `LoadFolders.xml`
    loads `/`, `1.6` (assembly only) and, without VFE, `NoVFE` + `NoVFE/1.6`. The shared tools are extended for this
@@ -59,6 +59,11 @@ These settle the open questions raised by the verification. They are in the livi
 5. **Incompatible mod: `Mlie.DressersHoldClothing`** (agent-resolved). This is the packageId in the mod's own
    `About/About.xml` on GitHub (`emipa606/DressersHoldClothing`); its `PublishedFileId.txt` is `2584894865`, the
    plan's Workshop ID.
+6. **Pre-mod saves come from a separate test-only helper mod** (user, 2026-11-10, after Phase 2). Loaded without
+   Tidy Threads, it builds the T7 fixture and writes the save; it references nothing from the mod, lives under
+   `tools/` like `tools/removal-probe/`, and never ships in `dist/`. Keep it general for porting.
+7. **Storage is the goal; bed comfort doesn't matter** (user, 2026-11-10). Scenarios assert storage behaviour, not
+   the comfort link; T2's bed-link check was removed. The comfort facility itself stays (decision 3).
 
 ## Verified details (2026-11-10)
 
@@ -154,9 +159,8 @@ and the installed ASF and VFE workshop folders (ASF ships its source under `Sour
       Pass: same as T1 with a 30-item limit; the texture renders in all four rotations. *Failure mode:* the NoVFE
       folder doesn't load, a texture is missing, or capacity is wrong.
 - T2 proved by run build `6e2179c-dirty.20261110T233235Z` (1/1 PASS, 0 new errors). Its scenario name is
-  `T2 Build a wardrobe VFE not active`: the plan title's comma can't be in a name. T2 also checks the bed links
-  `Table_Wardrobe` exactly once (decision 3), at def level; the rotation check reads each rotation's material texture,
-  not a screenshot.
+  `T2 Build a wardrobe VFE not active`: the plan title's comma can't be in a name. The rotation check reads each
+  rotation's material texture, not a screenshot. Its bed-link check was dropped (decision 7); rerun below.
 - Our wardrobe: `ArtableFurnitureBase` (quality and art, like the dresser and VFE's), drawSize (2,2), 256 px textures,
   cost 70, HP 150, work 2600, mass 22, beauty 6, `uiOrder` 2071.
 - The wardrobe patch also sets `surfaceType Item` and `canOverlapZones false` (Replace or Add), which the plan's patch
@@ -181,7 +185,8 @@ and the installed ASF and VFE workshop folders (ASF ships its source under `Sour
 
 ## Phase 4: Dressers from saves made before the mod
 
-- [ ] Test harness: make a save without the mod and load it with the mod (decision 2)
+- [ ] Test harness: make a save without the mod and load it with the mod (decision 2), using a separate test-only
+      helper mod that builds the pre-mod fixture and saves (decision 6)
 - [ ] Converter, tried in plan order and stopping at the first that passes T7: Option 1 (ASF built-in; Verified
       details predict a fail on settings); then Option 2 with Patch B only, redesigned to detect legacy dressers
       without the null check; then Fallback C

@@ -51,6 +51,8 @@ From the plan unless noted; ask before changing any of them.
   extended for `LoadFolders.xml` and `NoVFE/`; harness changes are made here, kept general and ported to the modding
   center; our wardrobe keeps the +0.05 bed-comfort facility; we draw our own wardrobe (texture, description, stats),
   copying no VE art or text; `incompatibleWith` is `Mlie.DressersHoldClothing`.
+- **User decisions (2026-11-10, after Phase 2):** pre-mod saves for T7/T12–T14 come from a separate test-only helper
+  mod (never shipped); storage is the goal and bed comfort doesn't matter, so scenarios don't assert the comfort link.
 - **Core only, no DLC:** test on Core + Harmony + ASF (+ VFE only for the VFE scenarios); no `MayRequire`.
 
 ## Tracking and test rules

@@ -13,8 +13,7 @@ namespace TidyThreads
 
         /// <summary>
         /// T2. Precondition: VFE not active, a clear site. Trigger: wardrobes made in wood, steel, granite and wood, one in
-        /// each rotation, then 30 shirts put in one. Expected: the wardrobe def is ours from NoVFE/, linked once to beds;
-        /// each is Critical apparel storage for 30 with our texture in its rotation; the full one holds 30 undrawn.
+        /// each rotation, then 30 shirts put in one. Expected: the wardrobe def is ours from NoVFE/; each is Critical apparel storage for 30 with our texture in its rotation; the full one holds 30 undrawn.
         /// Failure mode: the NoVFE folder doesn't load, a texture is missing, or the capacity is wrong.
         /// </summary>
         private static void T2BuildAWardrobeVfeNotActive()
@@ -30,11 +29,8 @@ namespace TidyThreads
                     ThingDef def = DefDatabase<ThingDef>.GetNamedSilentFail("Table_Wardrobe");
                     if (def == null)
                         return Ok("no Table_Wardrobe def: NoVFE/1.6/Defs didn't load");
-                    if (def.modContentPack?.PackageId != TidyThreadsMod.PackageId || def.graphicData.texPath != "TidyThreads/Furniture/Wardrobe")
-                        return Ok($"Table_Wardrobe comes from {def.modContentPack?.PackageId} with texPath {def.graphicData.texPath}");
-                    int links = Def("Bed").GetCompProperties<CompProperties_AffectedByFacilities>()?.linkableFacilities
-                        .Count(d => d == def) ?? 0;
-                    return Ok(links == 1 ? null : $"the bed links the wardrobe {links} times, expected once");
+                    return Ok(def.modContentPack?.PackageId == TidyThreadsMod.PackageId && def.graphicData.texPath == "TidyThreads/Furniture/Wardrobe"
+                        ? null : $"Table_Wardrobe comes from {def.modContentPack?.PackageId} with texPath {def.graphicData.texPath}");
                 })
                 .Do("four wardrobes, one per rotation", () =>
                 {

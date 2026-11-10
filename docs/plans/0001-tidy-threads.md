@@ -1,4 +1,4 @@
-<!-- Snapshot of the living design doc https://claude.ai/artifact/DmZxu6jsgd5qVrcYTtZhTz (rev 21, read 2026-11-10).
+<!-- Snapshot of the living design doc https://claude.ai/artifact/DmZxu6jsgd5qVrcYTtZhTz (rev 23, read 2026-11-10).
      The living doc is canonical: change it first, then refresh this snapshot. Placeholder names in it
      ("Closet Space", ClosetSpace, CS_, yourname.closetspace) map to Tidy Threads: TidyThreads, TT_, josh9817.tidythreads. -->
 
@@ -46,7 +46,7 @@ Gameplay facts below come from the wiki pages opened on 2026-11-10; anything mar
 
 ## Decisions (2026-11-10)
 
-Five decisions settle the open questions; where a section below differs, these win. The repo's `TODO.md` records the verification behind them.
+Seven decisions settle the open questions; where a section below differs, these win. The repo's `TODO.md` records the verification behind them.
 
 | # | Decision | Replaces |
 | --- | --- | --- |
@@ -55,6 +55,8 @@ Five decisions settle the open questions; where a section below differs, these w
 | 3 | Our wardrobe keeps bed comfort: a `CompProperties_Facility` (Comfort +0.05, maxDistance 6, maxSimultaneous 1) and a bed `linkableFacilities` patch, both under `NoVFE/` so they don't double up with VFE's own link. | "Plain furniture" with no comps, for the comfort facility only |
 | 4 | We draw our own wardrobe texture and write our own description and stats. Only the defName `Table_Wardrobe` and the 2×1 size are shared with VFE. | Copying VFE's texture, description and stats |
 | 5 | `incompatibleWith` is `Mlie.DressersHoldClothing`, the packageId in that mod's own About.xml (Workshop 2584894865). | `mlie.dressersholdclothing` (unverified) |
+| 6 | The pre-mod save for T7 and T12–T14 is built by a separate test-only helper mod, loaded without Tidy Threads. It references nothing from the mod and never ships in the release package. | — |
+| 7 | The goal is apparel storage; bed comfort from dressers and wardrobes doesn't matter. Scenarios assert storage behaviour, not the comfort link. The comfort facility itself stays (decision 3). | T2's bed-link check |
 
 Verified facts: the VFE wardrobe defName is `Table_Wardrobe` (size 2×1); packageIds are `brrainz.harmony`, `adaptive.storage.framework` and `VanillaExpanded.VFECore`. ASF already converts a saved `Building` to its class, so Patch A isn't needed; Patch B's null check can't work as written, because ASF sets `settings` during loading.
 
