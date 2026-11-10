@@ -3,6 +3,10 @@
 
   rwdefs.py def  <rw_dir> <defName|Name>   print a vanilla def and its ParentName chain
   rwdefs.py lint <rw_dir> <repo>           check our Defs/textures before spending a game restart
+  rwdefs.py folders <repo>                 the load folders LoadFolders.xml names ("" = the root), in order
+
+Without LoadFolders.xml the game loads the root and 1.6/; with it, every folder it lists (any condition), so lint
+covers each folder's Defs/ and Textures/.
 """
 import re
 import struct
@@ -15,20 +19,34 @@ REF_LISTS = {"thingDefs", "recipes", "researchPrerequisites", "prerequisites", "
 REF_TAG_LISTS = {"costList", "products"}
 REF_VALUES = {"researchPrerequisite", "thingDef", "hediff", "designationCategory", "thingCategory"}
 TEX_TAGS = {"texPath", "iconPath", "uiIconPath"}
+def load_folders(repo):
+    """Folders the game loads, relative to the repo ("" = the root): LoadFolders.xml's entries for every version and
+    condition, in order, or the default root + 1.6."""
+    lf = Path(repo) / "LoadFolders.xml"
+    if not lf.is_file():
+        return ["", "1.6"]
+    out = []
+    for li in ET.parse(lf).getroot().iter("li"):
+        folder = (li.text or "").strip().strip("/")
+        if folder not in out:
+            out.append(folder)
+    return out
+
+
+def tex_roots(repo):
+    return [Path(repo) / f / "Textures" for f in load_folders(repo) if (Path(repo) / f / "Textures").is_dir()]
+
+
 def our_tex_prefix(repo):
     """Our texture paths under Textures/, or "" when texture checking is off.
-    MOD_TEX_PREFIX overrides; otherwise the sole subdirectory of <repo>/Textures is used
+    MOD_TEX_PREFIX overrides; otherwise the sole subdirectory name shared by every load folder's Textures/
     (vanilla textures live in asset bundles and can't be checked on disk)."""
     import os
     env = os.environ.get("MOD_TEX_PREFIX")
     if env is not None:
         return env
-    tex = Path(repo) / "Textures"
-    if tex.is_dir():
-        subs = [d for d in tex.iterdir() if d.is_dir()]
-        if len(subs) == 1:
-            return subs[0].name + "/"
-    return ""
+    subs = {d.name for tex in tex_roots(repo) for d in tex.iterdir() if d.is_dir()}
+    return next(iter(subs)) + "/" if len(subs) == 1 else ""
 
 
 def def_files(root):
@@ -105,20 +123,22 @@ def png_size(path):
     return struct.unpack(">II", head[16:24])
 
 
-def texture_exists(tex_root, path):
-    p = tex_root / path
-    return (p.with_suffix(".png").is_file()
-            or (tex_root / f"{path}_north.png").is_file()
-            or (p.is_dir() and any(p.glob("*.png"))))
+def texture_exists(roots, path):
+    for tex_root in roots:
+        p = tex_root / path
+        if (p.with_suffix(".png").is_file() or (tex_root / f"{path}_north.png").is_file()
+                or (p.is_dir() and any(p.glob("*.png")))):
+            return True
+    return False
 
 
 def cmd_lint(rw_dir, repo):
     repo = Path(repo)
     errors = []
-    ours = def_files(repo / "Defs")
+    ours = [f for folder in load_folders(repo) for f in def_files(repo / folder / "Defs")]
     known = index_names(def_files(Path(rw_dir) / "Data/Core/Defs")) | index_names(ours)
     known |= implied_corpses(ours)
-    tex_root = repo / "Textures"
+    roots = tex_roots(repo)
     our_prefix = our_tex_prefix(repo)
 
     for f in [*ours, *def_files(repo / "About")]:
@@ -145,15 +165,15 @@ def cmd_lint(rw_dir, repo):
             if name[-1:].isdigit():
                 errors.append(f"{rel}: ThingDef '{name}' ends in a digit (thing IDs won't resolve on load)")
             if our_prefix and el.tag in TEX_TAGS and el.text and el.text.strip().startswith(our_prefix):
-                if not texture_exists(tex_root, el.text.strip()):
+                if not texture_exists(roots, el.text.strip()):
                     errors.append(f"{rel}: <{el.tag}> '{el.text.strip()}' has no PNG under Textures/ (case-sensitive)")
 
     for cs in (repo / "Source").rglob("*.cs"):
         for path in re.findall(r'(?:ContentFinder<Texture2D>\.Get|MaterialPool\.MatFrom)\("([^"]+)"', cs.read_text(encoding="utf-8")):
-            if our_prefix and path.startswith(our_prefix) and not texture_exists(tex_root, path):
+            if our_prefix and path.startswith(our_prefix) and not texture_exists(roots, path):
                 errors.append(f"{cs.relative_to(repo)}: texture '{path}' has no PNG under Textures/ (case-sensitive)")
 
-    for png in [*tex_root.rglob("*.png"), *(repo / "About").glob("*.png")]:
+    for png in [*(p for r in roots for p in r.rglob("*.png")), *(repo / "About").glob("*.png")]:
         size = png_size(png)
         rel = png.relative_to(repo)
         if size is None:
@@ -171,6 +191,9 @@ def cmd_lint(rw_dir, repo):
 
 
 if __name__ == "__main__":
-    if len(sys.argv) != 4 or sys.argv[1] not in ("def", "lint"):
+    if len(sys.argv) == 3 and sys.argv[1] == "folders":
+        print("\n".join(load_folders(sys.argv[2])))
+    elif len(sys.argv) != 4 or sys.argv[1] not in ("def", "lint"):
         sys.exit(__doc__)
-    {"def": cmd_def, "lint": cmd_lint}[sys.argv[1]](sys.argv[2], sys.argv[3])
+    else:
+        {"def": cmd_def, "lint": cmd_lint}[sys.argv[1]](sys.argv[2], sys.argv[3])

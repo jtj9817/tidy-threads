@@ -19,6 +19,15 @@ for dir in About Defs Textures Patches Languages Sounds; do
   [[ ! -d "$REPO/$dir" ]] || cp -r "$REPO/$dir" "$NEW/"
 done
 cp "$REPO/1.6/Assemblies/$MOD_NAME.dll" "$NEW/1.6/Assemblies/"
+# LoadFolders.xml and the extra load folders it names (e.g. NoVFE, NoVFE/1.6), with their game content only.
+if [[ -f "$REPO/LoadFolders.xml" ]]; then
+  cp "$REPO/LoadFolders.xml" "$NEW/"
+  while read -r folder; do
+    for dir in Defs Textures Patches Languages Sounds; do
+      [[ ! -d "$REPO/$folder/$dir" ]] || { mkdir -p "$NEW/$folder"; cp -r "$REPO/$folder/$dir" "$NEW/$folder/"; }
+    done
+  done < <(python3 -I "$HERE/rwdefs.py" folders "$REPO" | grep -vxE '|1\.6')
+fi
 # The game ignores files at the mod root.
 cp "$DEVLOG/last-build" "$NEW/BUILD"
 for file in README.md LICENSE LICENSE.md LICENSE.txt CHANGELOG.md; do

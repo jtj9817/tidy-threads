@@ -81,7 +81,8 @@ Environment variables beyond the identity: `RW_DIR` (game install), `RW_DATA`/`U
 `MOD_PKG`, `MOD_SCREEN` (default 640×360), `MOD_RENDER_THREADS` (default 4), `MOD_TEX_PREFIX`,
 `MOD_EXTRA_MODS` (test-only packageIds loaded after the mod, comma-separated; the launched set is recorded in
 `.devlog/autotest/extra-mods` and a run with a different set restarts the instance cold; scenarios needing one check
-`ModsConfig.IsActive` and skip themselves without it),
+`ModsConfig.IsActive` and skip themselves without it), `MOD_DEPS` (required packageIds loaded before the mod in
+every launch, baseline included; `preflight` refuses to start when one isn't installed),
 `MOD_HANDOFF_TOKENS`, `MOD_HANDOFF_DISPLAY`, `MOD_HANDOFF_CLAUDE_ARGS`, `MOD_USAGE_LOG`, `QBLOG_ALL`,
 `BACKUP_DIR`, `XAUTHORITY_GAME`.
 

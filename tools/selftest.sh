@@ -16,7 +16,7 @@ rm -rf "$SELF"
 mkdir -p "$SELF/devlog" "$SELF/game/Mods" "$SELF/harmony/About" "$SELF/harmony/1.6"
 echo "1.6.4871 rev598" > "$SELF/game/Version.txt"
 ln -s "$HERE/selftest/RimWorldLinux" "$SELF/game/RimWorldLinux"
-export MOD_DEVLOG="$SELF/devlog" RW_DIR="$SELF/game" HARMONY_DIR="$SELF/harmony" FAKE_EXE="$SELF/game/RimWorldLinux"
+export MOD_DEPS="" MOD_DEVLOG="$SELF/devlog" RW_DIR="$SELF/game" HARMONY_DIR="$SELF/harmony" FAKE_EXE="$SELF/game/RimWorldLinux"
 unset RW_DATA FAKE_FAIL FAKE_STARTUP_ERROR FAKE_REMOVAL_ERRORS FAKE_LOAD_FAIL FAKE_WRONG_MOD_SOURCE
 echo "selftest.1" > "$MOD_DEVLOG/last-build"
 

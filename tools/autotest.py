@@ -75,6 +75,9 @@ LAST_BUILD = DEVLOG / "last-build"
 
 PACKAGE_ID = MOD_ID
 CORE_MODS = ["brrainz.harmony", "ludeon.rimworld"]
+# Required dependencies that must load BEFORE the mod (comma-separated packageIds, in load order), e.g. a framework
+# the mod's Defs patch or reference. Loaded in every launch, the baseline included, so the baseline holds their noise.
+DEPS = [m.strip() for m in os.environ.get("MOD_DEPS", "").split(",") if m.strip()]
 # Test-only extra mods, loaded after this one (comma-separated packageIds, e.g. another mod a scenario interacts with).
 # Never a dependency of the mod; the scenarios that need one check ModsConfig.IsActive and skip themselves otherwise.
 # The launched set is recorded in EXTRA_MODS_FILE; a run with a different set restarts the instance cold.
@@ -318,7 +321,7 @@ def write_profile(with_mod, removal_probe=False):
     """Rewrites the test profile's config every launch, so the game can't drift from it."""
     config = RW_DATA / "Config"
     config.mkdir(parents=True, exist_ok=True)
-    mods = CORE_MODS + ([PACKAGE_ID] + EXTRA_MODS if with_mod else []) + ([PROBE_ID] if removal_probe else [])
+    mods = CORE_MODS + DEPS + ([PACKAGE_ID] + EXTRA_MODS if with_mod else []) + ([PROBE_ID] if removal_probe else [])
     items = "\n".join(f"    <li>{m}</li>" for m in mods)
     (config / "ModsConfig.xml").write_text(
         '<?xml version="1.0" encoding="utf-8"?>\n<ModsConfigData>\n'
@@ -340,6 +343,21 @@ def ensure_mod_link():
         say(f"installed mod link {MOD_LINK} -> {target}")
 
 
+def installed_package_ids():
+    """Lower-cased packageIds of every workshop item and every folder in the game's Mods/."""
+    import xml.etree.ElementTree as ET
+    ids = set()
+    for root in (HARMONY_DIR.parent, RW_DIR / "Mods"):
+        for about in root.glob("*/About/About.xml"):
+            try:
+                pid = ET.parse(about).getroot().findtext("packageId")
+            except (OSError, ET.ParseError):
+                continue
+            if pid:
+                ids.add(pid.strip().lower())
+    return ids
+
+
 def preflight():
     if not EXE.is_file():
         die(f"no game at {EXE}")
@@ -349,6 +367,9 @@ def preflight():
         die("Steam is not running: workshop mods (Harmony) only load while it runs")
     if not (HARMONY_DIR / "About").is_dir():
         die(f"Harmony not found at {HARMONY_DIR}")
+    missing = sorted({m.lower() for m in DEPS + EXTRA_MODS} - installed_package_ids())
+    if missing:
+        die(f"not installed (workshop or Mods/): {', '.join(missing)}")
     users = user_game_pids()
     if users:
         # Proven safe on 2026-10-19: own profile, logs, XDG dirs and display; the user's profile stays untouched.
