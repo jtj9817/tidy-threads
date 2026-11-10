@@ -20,17 +20,17 @@ prefix `TT_`, Harmony id `josh9817.tidythreads`. The plan's placeholders map lik
 - [x] **Phase 0**: Skeleton and test harness
 - [x] **Phase 1**: Dresser becomes apparel storage
 - [x] **Phase 2**: Wardrobe without VFE
-- [ ] **Phase 3**: Moving apparel into new dressers
+- [x] **Phase 3**: Moving apparel into new dressers
 - [ ] **Phase 4**: Dressers from saves made before the mod
 - [ ] **Phase 5**: Wardrobe with VFE, and VFE added to or removed from a save
 - [ ] **Phase 6**: Release
 
 ## Current state
 
-- **Next step:** Phase 3 (T5, T6, T9, T10, T11). Hand-off: `docs/handoff/20261110-2336-phases-3-to-5.md`.
+- **Next step:** Phase 4 (pre-mod save harness, converter, T7, T12–T14). Hand-off: `docs/handoff/20261110-2336-phases-3-to-5.md`.
 - **Open questions for the user:** T12's exact room-role pass condition; a separate error baseline for the VFE runs
   (Harmony + Core + ASF + VE Framework + VFE, no mod).
-- **Last run:** 2026-11-10 T2 rerun without the bed-link check: 1/1 PASS, 0 new errors (`docs/test-runs.md`).
+- **Last run:** 2026-11-10 T5, T6, T9, T10, T11: 5/5 PASS, 0 new errors (`docs/test-runs.md`).
 - **Environment (checked 2026-11-10):** game `1.6.4871 rev598`; Steam running; `dotnet`, `inkscape`, `Xvfb`, `xdotool`,
   `import` present. Workshop: Harmony (2009463077), ASF (3033901359) and VFE (1718190143) are installed;
   Dressers Hold Clothing (Continued) (2584894865) is not. `tools/vanilla.sh init` is done (`.tools/decomp`, 9213
@@ -173,19 +173,28 @@ and the installed ASF and VFE workshop folders (ASF ships its source under `Sour
 
 ## Phase 3: Moving apparel into new dressers
 
-- [ ] **Prove T5 Loose apparel, mixed types.** Spawn 25 items near one dresser: parka, tribalwear, flak vest, simple
+- [x] **Prove T5 Loose apparel, mixed types.** Spawn 25 items near one dresser: parka, tribalwear, flak vest, simple
       helmet, shield belt, one tainted item, one at 10% HP. Pass: haulers store exactly 20 and 5 stay outside; every
       type is accepted, including tainted and damaged. *Failure mode:* capacity overflow, or a subtype rejected.
-- [ ] **Prove T6 From lower storage.** Put 10 apparel in a Normal stockpile and 6 on a Preferred shelf, then build a
+- [x] **Prove T6 From lower storage.** Put 10 apparel in a Normal stockpile and 6 on a Preferred shelf, then build a
       dresser. Pass: all 16 move into the dresser and nothing moves back. *Failure mode:* Critical priority not
       honoured, or a hauling loop.
-- [ ] **Prove T9 Non-apparel rejected.** Spawn steel, meals and a rifle next to the dresser and open its filter. Pass:
+- [x] **Prove T9 Non-apparel rejected.** Spawn steel, meals and a rifle next to the dresser and open its filter. Pass:
       none are hauled in; the filter lists only Apparel. *Failure mode:* fixed filter not enforced.
-- [ ] **Prove T10 Linking and capacity.** Link 2 dressers and 1 wardrobe; try to link a dresser with a shelf; spawn 80
+- [x] **Prove T10 Linking and capacity.** Link 2 dressers and 1 wardrobe; try to link a dresser with a shelf; spawn 80
       apparel. Pass: the group holds 70; the shelf can't join the group. *Failure mode:* wrong `storageGroupTag`, or
       group capacity wrong.
-- [ ] **Prove T11 Unreachable dresser.** Wall in a dresser on all reachable sides. Pass: no hauling attempts loop, no
+- [x] **Prove T11 Unreachable dresser.** Wall in a dresser on all reachable sides. Pass: no hauling attempts loop, no
       errors, and apparel stays in other storage. *Failure mode:* job loop or errors on an unreachable target.
+- T5, T6, T9, T10 and T11 proved by run build `98f9e4b-dirty.20261110T234809Z` (5/5 PASS, 0 new errors). Names drop the plan's commas
+  (`T5 Loose apparel mixed types`). All five haul live on the quicktest map with a 30000-tick timeout (T10: 60000);
+  T5 took 1350 ticks to store 20, T10 3150 to fill 70. `Scenarios.P3.cs` adds `ApparelStockpile` (apparel-only zone,
+  deleted in `OnFinish`), `RequireHaulers`, `CountOn` and `CountSpawned`.
+- T9 has a control shirt that must be hauled in first, so "nothing hauled" can't pass with idle haulers. T10 links
+  through the real gizmo (`Find.Selector` + the "LinkStorageSettings" `Command_Action`), and checks the shelf's own
+  Link is disabled next to a dresser. T11 asserts `StoreUtility.TryFindBestBetterStorageFor` never picks the dresser
+  and samples colonists' jobs for 3000 ticks; vanilla's own job-loop error would show as a new red error.
+- `Scenario.Finish` now also destroys tracked items a hauler is carrying (unspawned, so `ById` misses them).
 
 ## Phase 4: Dressers from saves made before the mod
 

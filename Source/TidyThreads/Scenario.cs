@@ -247,6 +247,10 @@ namespace TidyThreads
             TT.Log($"SCENARIO {name}: {verdict}{extra}");
             foreach (string id in tracked)
                 ById(id)?.Destroy();
+            // A tracked item a hauler is carrying is unspawned, so ById misses it: drop it from the hands too.
+            foreach (Pawn p in Find.CurrentMap?.mapPawns.AllPawnsSpawned ?? new List<Pawn>())
+                if (p.carryTracker?.CarriedThing is Thing carried && tracked.Contains(carried.ThingID))
+                    carried.Destroy();
             foreach (Action cleanup in cleanups)
             {
                 try

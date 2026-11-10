@@ -20,6 +20,12 @@ namespace TidyThreads
             ("T4 Blueprint settings", T4BlueprintSettings),
             // Phase 2: the wardrobe without VFE
             ("T2 Build a wardrobe VFE not active", T2BuildAWardrobeVfeNotActive),
+            // Phase 3: hauling apparel into the furniture
+            ("T5 Loose apparel mixed types", T5LooseApparelMixedTypes),
+            ("T6 From lower storage", T6FromLowerStorage),
+            ("T9 Non-apparel rejected", T9NonApparelRejected),
+            ("T10 Linking and capacity", T10LinkingAndCapacity),
+            ("T11 Unreachable dresser", T11UnreachableDresser),
         };
 
         private const string AsfThingClass = "AdaptiveStorage.ThingClass";
