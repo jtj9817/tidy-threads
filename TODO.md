@@ -18,7 +18,7 @@ prefix `TT_`, Harmony id `josh9817.tidythreads`. The plan's placeholders map lik
 ## Progress
 
 - [x] **Phase 0**: Skeleton and test harness
-- [ ] **Phase 1**: Dresser becomes apparel storage
+- [x] **Phase 1**: Dresser becomes apparel storage
 - [ ] **Phase 2**: Wardrobe without VFE
 - [ ] **Phase 3**: Moving apparel into new dressers
 - [ ] **Phase 4**: Dressers from saves made before the mod
@@ -27,8 +27,8 @@ prefix `TT_`, Harmony id `josh9817.tidythreads`. The plan's placeholders map lik
 
 ## Current state
 
-- **Next step:** Phase 1 (dresser patch, T1, T3, T4).
-- **Last run:** 2026-11-10 smoke start with the mod: ready, 0 new errors (`docs/test-runs.md`).
+- **Next step:** Phase 2 (our wardrobe without VFE, T2).
+- **Last run:** 2026-11-10 T1, T3, T4: 3/3 PASS, 0 new errors (`docs/test-runs.md`).
 - **Environment (checked 2026-11-10):** game `1.6.4871 rev598`; Steam running; `dotnet`, `inkscape`, `Xvfb`, `xdotool`,
   `import` present. Workshop: Harmony (2009463077), ASF (3033901359) and VFE (1718190143) are installed;
   Dressers Hold Clothing (Continued) (2584894865) is not. `tools/vanilla.sh init` is done (`.tools/decomp`, 9213
@@ -95,6 +95,9 @@ and the installed ASF and VFE workshop folders (ASF ships its source under `Sour
 - Run the harness as `source tools/env.sh && tools/autotest.py ...`: env.sh now exports the identity and `MOD_DEPS`
   (ASF), which autotest.py reads from the environment. Before this, `tools/status.sh`'s call into autotest.py failed
   with "set MOD_NAME and MOD_ID".
+- Scenarios read ASF state by reflection (`Renderer.ShowContainedItems`) and the inspect string (`N / 20`), so the
+  project has no compile-time ASF reference. Builds and installs in scenarios go through vanilla paths:
+  `Blueprint.TryReplaceWithSolidThing` + `Frame.CompleteConstruction`, `MinifyUtility.Uninstall`, `PlaceBlueprintForInstall`.
 - Tool changes to port in Phase 6: `MOD_DEPS` in autotest.py/env.sh (+ preflight install check, selftest clears it),
   the env.sh `export` line, `rwdefs.py folders` and load-folder lint, `package.sh` load folders.
 - `TidyThreadsMod`'s constructor logs the build id and patches; `AutoTest.Init` runs from `TT`'s static constructor
@@ -120,18 +123,19 @@ and the installed ASF and VFE workshop folders (ASF ships its source under `Sour
 
 ## Phase 1: Dresser becomes apparel storage
 
-- [ ] Dresser patch (plan § Dresser patch) in `Patches/TT_Dresser.xml`, with the ASF fields in Verified details; marker extension `capacity 20`;
+- [x] Dresser patch (plan § Dresser patch) in `Patches/TT_Dresser.xml`, with the ASF fields in Verified details; marker extension `capacity 20`;
       `storageGroupTag TT_ApparelFurniture`
-- [ ] ASF GraphicsDef `TT_Dresser_Graphics` with `showContainedItems false`
-- [ ] **Prove T1 Build a dresser.** Research Complex furniture; build dressers in wood, steel and granite. Pass: the
+- [x] ASF GraphicsDef `TT_Dresser_Graphics` with `showContainedItems false`
+- [x] **Prove T1 Build a dresser.** Research Complex furniture; build dressers in wood, steel and granite. Pass: the
       Storage tab shows only Apparel at Critical; the inspect pane shows a 20-item limit; nothing is drawn on top
       once filled. *Failure mode:* patch didn't apply, or a wrong filter, priority or capacity.
-- [ ] **Prove T3 Minified and reinstalled.** Spawn a minified dresser and install it; uninstall and reinstall a built
+- [x] **Prove T3 Minified and reinstalled.** Spawn a minified dresser and install it; uninstall and reinstall a built
       one. Pass: the installed dresser is storage at Critical with Apparel. *Failure mode:* settings lost or not
       reset through the minified thing.
-- [ ] **Prove T4 Blueprint settings.** Place a dresser blueprint and open its Storage tab before building. Pass: the tab
+- [x] **Prove T4 Blueprint settings.** Place a dresser blueprint and open its Storage tab before building. Pass: the tab
       exists and shows Critical; edits carry over to the finished dresser. *Failure mode:* no `Blueprint_Storage`,
       so no tab or lost edits.
+- T1, T3 and T4 proved by run build `a599149-dirty.20261110T232913Z` (3/3 PASS, 0 new errors; `docs/test-runs.md`).
 
 ## Phase 2: Wardrobe without VFE
 

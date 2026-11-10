@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Patch>
+  <!-- Every dresser becomes apparel-only storage: 10 per cell × 2 cells = 20, Critical by default (plan § Dresser
+       patch). Patched, never overridden, so other mods' dresser patches still apply. The dresser keeps its comfort
+       facility, quality, art, beauty, cost and research. -->
+
+  <!-- 1. ASF's storage class. Vanilla's dresser inherits Building, so this normally takes the nomatch Add. -->
+  <Operation Class="PatchOperationConditional">
+    <xpath>Defs/ThingDef[defName="Dresser"]/thingClass</xpath>
+    <match Class="PatchOperationReplace">
+      <xpath>Defs/ThingDef[defName="Dresser"]/thingClass</xpath>
+      <value><thingClass>AdaptiveStorage.ThingClass</thingClass></value>
+    </match>
+    <nomatch Class="PatchOperationAdd">
+      <xpath>Defs/ThingDef[defName="Dresser"]</xpath>
+      <value><thingClass>AdaptiveStorage.ThingClass</thingClass></value>
+    </nomatch>
+  </Operation>
+
+  <!-- ASF draws in real time too (AdaptiveStorageBase); vanilla's dresser inherits MapMeshOnly. -->
+  <Operation Class="PatchOperationConditional">
+    <xpath>Defs/ThingDef[defName="Dresser"]/drawerType</xpath>
+    <match Class="PatchOperationReplace">
+      <xpath>Defs/ThingDef[defName="Dresser"]/drawerType</xpath>
+      <value><drawerType>MapMeshAndRealTime</drawerType></value>
+    </match>
+    <nomatch Class="PatchOperationAdd">
+      <xpath>Defs/ThingDef[defName="Dresser"]</xpath>
+      <value><drawerType>MapMeshAndRealTime</drawerType></value>
+    </nomatch>
+  </Operation>
+
+  <!-- The other ThingDef-level fields AdaptiveStorageBase sets that the dresser lacks. -->
+  <Operation Class="PatchOperationAdd">
+    <xpath>Defs/ThingDef[defName="Dresser"]</xpath>
+    <value>
+      <drawGUIOverlay>true</drawGUIOverlay>
+      <pathCostIgnoreRepeat>true</pathCostIgnoreRepeat>
+    </value>
+  </Operation>
+
+  <!-- 2. Make sure a <building> node exists (vanilla's dresser has one, for paintable). -->
+  <Operation Class="PatchOperationConditional">
+    <xpath>Defs/ThingDef[defName="Dresser"]/building</xpath>
+    <nomatch Class="PatchOperationAdd">
+      <xpath>Defs/ThingDef[defName="Dresser"]</xpath>
+      <value><building /></value>
+    </nomatch>
+  </Operation>
+
+  <!-- 3. Storage behaviour. blueprintClass gives the blueprint its Storage tab (T4). -->
+  <Operation Class="PatchOperationAdd">
+    <xpath>Defs/ThingDef[defName="Dresser"]/building</xpath>
+    <value>
+      <maxItemsInCell>10</maxItemsInCell>
+      <preventDeteriorationOnTop>true</preventDeteriorationOnTop>
+      <ignoreStoredThingsBeauty>true</ignoreStoredThingsBeauty>
+      <blueprintClass>Blueprint_Storage</blueprintClass>
+      <!-- Dressers and wardrobes link only with each other, never with shelves. -->
+      <storageGroupTag>TT_ApparelFurniture</storageGroupTag>
+      <fixedStorageSettings>
+        <filter>
+          <categories>
+            <li>Apparel</li>
+          </categories>
+        </filter>
+      </fixedStorageSettings>
+      <!-- A default, not a lock: players may lower it per dresser. -->
+      <defaultStorageSettings>
+        <priority>Critical</priority>
+        <filter>
+          <categories>
+            <li>Apparel</li>
+          </categories>
+        </filter>
+      </defaultStorageSettings>
+    </value>
+  </Operation>
+
+  <!-- 4. Storage tab. The dresser inherits ITab_Art; a child list merges with the parent's. -->
+  <Operation Class="PatchOperationConditional">
+    <xpath>Defs/ThingDef[defName="Dresser"]/inspectorTabs</xpath>
+    <match Class="PatchOperationAdd">
+      <xpath>Defs/ThingDef[defName="Dresser"]/inspectorTabs</xpath>
+      <value><li>ITab_Storage</li></value>
+    </match>
+    <nomatch Class="PatchOperationAdd">
+      <xpath>Defs/ThingDef[defName="Dresser"]</xpath>
+      <value><inspectorTabs><li>ITab_Storage</li></inspectorTabs></value>
+    </nomatch>
+  </Operation>
+
+  <!-- 5. Marker read by the C# converter and the scenarios. -->
+  <Operation Class="PatchOperationConditional">
+    <xpath>Defs/ThingDef[defName="Dresser"]/modExtensions</xpath>
+    <match Class="PatchOperationAdd">
+      <xpath>Defs/ThingDef[defName="Dresser"]/modExtensions</xpath>
+      <value><li Class="TidyThreads.ApparelStorageExtension"><capacity>20</capacity></li></value>
+    </match>
+    <nomatch Class="PatchOperationAdd">
+      <xpath>Defs/ThingDef[defName="Dresser"]</xpath>
+      <value><modExtensions><li Class="TidyThreads.ApparelStorageExtension"><capacity>20</capacity></li></modExtensions></value>
+    </nomatch>
+  </Operation>
+</Patch>

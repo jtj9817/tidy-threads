@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Defs>
+  <!-- Stored apparel isn't drawn on top of the furniture; ASF lists it in the inspect pane instead. -->
+  <AdaptiveStorage.GraphicsDef>
+    <defName>TT_Dresser_Graphics</defName>
+    <targetDef>Dresser</targetDef>
+    <showContainedItems>false</showContainedItems>
+  </AdaptiveStorage.GraphicsDef>
+</Defs>
