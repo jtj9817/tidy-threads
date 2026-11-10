@@ -29,7 +29,7 @@ prefix `TT_`, Harmony id `josh9817.tidythreads`. The plan's placeholders map lik
 
 - **Next step:** Phase 4 (pre-mod save harness, converter, T7, T12–T14). Hand-off: `docs/handoff/20261110-2336-phases-3-to-5.md`.
 - **Open questions for the user:** none.
-- **Last run:** 2026-11-10 T5, T6, T9, T10, T11: 5/5 PASS, 0 new errors (`docs/test-runs.md`).
+- **Last run:** 2026-11-10 T12: 1/1 PASS, 0 new errors (`docs/test-runs.md`).
 - **Environment (checked 2026-11-10):** game `1.6.4871 rev598`; Steam running; `dotnet`, `inkscape`, `Xvfb`, `xdotool`,
   `import` present. Workshop: Harmony (2009463077), ASF (3033901359) and VFE (1718190143) are installed;
   Dressers Hold Clothing (Continued) (2584894865) is not. `tools/vanilla.sh init` is done (`.tools/decomp`, 9213
@@ -211,9 +211,11 @@ and the installed ASF and VFE workshop folders (ASF ships its source under `Sour
       save. Add the mod and load. Pass: the log shows the conversion message twice; both dressers have the Storage tab,
       Critical and Apparel; position, rotation, stuff, HP, quality and art title are unchanged; haulers move the 15
       items in. *Failure mode:* class not swapped, empty settings, or lost quality or art.
-- [ ] **Prove T12 Bedroom and comfort** (decisions 8, 9): fresh map; a fixture room with a bed, 2 dressers and a
+- [x] **Prove T12 Bedroom and comfort** (decisions 8, 9): fresh map; a fixture room with a bed, 2 dressers and a
       wardrobe is a Bedroom; one with only 2 dressers and a wardrobe is a Storeroom. *Failure mode:* a room's role is
       wrong because of the apparel furniture.
+      Proved by run build `c1fd1e1-dirty.20261110T235343Z` (1/1 PASS, 0 new errors): two `f.Rooms(2, 7, 5, RoomPower.None)` rooms, roles
+      `Bedroom` and `Storeroom`.
 - [ ] **Prove T13 Uninstall and deconstruct while full.** Uninstall one full dresser and deconstruct another. Pass: all
       contents drop nearby, none are deleted, no errors. *Failure mode:* contents vanish (the 1.6 outfit stand bug).
 - [ ] **Prove T14 Save and reload.** Set one converted dresser to Normal, save, reload twice. Pass: contents identical;
