@@ -53,6 +53,8 @@ From the plan unless noted; ask before changing any of them.
   copying no VE art or text; `incompatibleWith` is `Mlie.DressersHoldClothing`.
 - **User decisions (2026-11-10, after Phase 2):** pre-mod saves for T7/T12–T14 come from a separate test-only helper
   mod (never shipped); storage is the goal and bed comfort doesn't matter, so scenarios don't assert the comfort link.
+- **User decisions (2026-11-10, Phase 4):** T12 checks only the room role on a fresh map (a bed + dressers + wardrobe
+  room is a Bedroom, a dressers + wardrobe room is a Storeroom); VFE runs use their own error baseline.
 - **Core only, no DLC:** test on Core + Harmony + ASF (+ VFE only for the VFE scenarios); no `MayRequire`.
 
 ## Tracking and test rules
