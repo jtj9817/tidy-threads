@@ -47,13 +47,17 @@ From the plan unless noted; ask before changing any of them.
   stop at the first that passes T7: ASF's built-in conversion, then Patch B (settings init), then Fallback C (respawn).
 - **Removing the mod mid-save is unsupported:** the README says so and tells players to uninstall dressers first. There
   is no removal-prep scenario and no `removal-check`.
+- **User decisions (2026-11-10, details in TODO.md § Decisions):** root `Defs/`/`Patches/` with the shared tools
+  extended for `LoadFolders.xml` and `NoVFE/`; harness changes are made here, kept general and ported to the modding
+  center; our wardrobe keeps the +0.05 bed-comfort facility; we draw our own wardrobe (texture, description, stats),
+  copying no VE art or text; `incompatibleWith` is `Mlie.DressersHoldClothing`.
 - **Core only, no DLC:** test on Core + Harmony + ASF (+ VFE only for the VFE scenarios); no `MayRequire`.
 
 ## Tracking and test rules
 
 User rules, binding on every session:
 
-- **[`TODO.md`](TODO.md) is the implementation tracker.** It holds every phase, its tasks, the open questions and the
+- **[`TODO.md`](TODO.md) is the implementation tracker.** It holds every phase, its tasks, the user's decisions and the
   verified facts. Read it at session start, and update it in the same commit as the work.
 - **The tests are the plan's scenarios T1–T17, nothing more and nothing less** (the plan has no T8). Each phase's
   **Prove** items name the ones it needs. Don't add scenarios, unit tests or test projects;
@@ -67,7 +71,7 @@ User rules, binding on every session:
 
 - **The agent** writes code and assets, builds, runs the tests itself in the isolated instance (`tools/autotest.py`,
   autotest loop), reads the logs, notes and iterates.
-- **The user** settles design questions (see the TODO's open questions) and plays their own game, often at the same
+- **The user** settles design questions (recorded in the TODO's Decisions) and plays their own game, often at the same
   time. Never close, kill, focus, screenshot or send input to their game; never touch their profile.
 
 ## Layout
@@ -75,8 +79,8 @@ User rules, binding on every session:
 | Path | Holds |
 | --- | --- |
 | `About/`, `LoadFolders.xml` | Mod metadata; load folders (`/`, `1.6`, and `NoVFE` + `NoVFE/1.6` only without VFE) |
-| `Defs/`, `Patches/` (layout pending, TODO open question 1) | ASF GraphicsDefs; the dresser and wardrobe patches |
-| `NoVFE/` | Our wardrobe def and its textures, loaded only when VFE is absent |
+| `Defs/`, `Patches/` | Root, always loaded: ASF GraphicsDefs; the dresser and wardrobe patches |
+| `NoVFE/` | Loaded only when VFE is absent: `1.6/Defs` (our wardrobe), `1.6/Patches` (bed comfort link), `Textures/TidyThreads/` |
 | `Source/TidyThreads/` | The C# project (mod class, marker extension, converter, `AutoTest.cs`, `Fixtures.cs`, scenarios); builds to `1.6/Assemblies/TidyThreads.dll` |
 | `Art/` | SVG texture sources, exported with `tools/export-textures.sh` |
 | `docs/` | `plans/` (the design snapshot), `test-runs.md`, and the shared method docs from the modding center |

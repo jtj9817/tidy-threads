@@ -27,7 +27,7 @@ prefix `TT_`, Harmony id `josh9817.tidythreads`. The plan's placeholders map lik
 
 ## Current state
 
-- **Next step:** answer the open questions below, then start Phase 0.
+- **Next step:** start Phase 0. All open questions are settled (see Decisions).
 - **Last run:** none yet.
 - **Environment (checked 2026-11-10):** game `1.6.4871 rev598`; Steam running; `dotnet`, `inkscape`, `Xvfb`, `xdotool`,
   `import` present. Workshop: Harmony (2009463077), ASF (3033901359) and VFE (1718190143) are installed;
@@ -35,27 +35,29 @@ prefix `TT_`, Harmony id `josh9817.tidythreads`. The plan's placeholders map lik
   files). Error baseline: not recorded yet.
 - Toolchain copied from `rimworld-modding-center` at `211fc88`.
 
-## Open questions (for the user)
+## Decisions (user, 2026-11-10)
 
-1. **Folder layout.** The plan puts patches in `1.6/Patches/` and defs in `1.6/Defs/`. The shared tools only handle
-   root folders: `tools/rwdefs.py` lints root `Defs/` only, and `tools/package.sh` copies `About Defs Textures Patches
-   Languages Sounds` plus the DLL. It does not copy `LoadFolders.xml`, `1.6/Defs`, `1.6/Patches` or `NoVFE/`.
-   Recommendation: put `Defs/` and `Patches/` at the root (`LoadFolders.xml` already loads `/`, as Fireteams does),
-   keep `NoVFE/` conditional, and extend `package.sh` to copy `LoadFolders.xml` and `NoVFE/`.
-2. **Test harness gaps.** These need tool changes, and the modding center says a general fix is ported back there.
-   - ASF is a required dependency that must load **before** the mod. `autotest.py` only loads
-     `CORE_MODS = [harmony, core]` before the mod, and `MOD_EXTRA_MODS` loads after it.
-   - T7, T12, T13 and T14 need a save made **without** the mod and then loaded **with** it. The harness can't do that
-     today; it only does the reverse, in `removal-check`.
-   - T15 and T16 need a save made with one mod set and loaded with another (VFE on or off).
-   Approve tool changes in this repo, ported to the modding center afterwards?
-3. **Our wardrobe copy and bed comfort.** VFE's `Table_Wardrobe` is a bed facility (+0.05 comfort, 6 tiles, max 1)
-   and VFE patches the bed `linkableFacilities` to include it. The plan's copy carries neither, so without VFE our
-   wardrobe would give no comfort. Should we keep the facility comp and the bed patch (inside `NoVFE/`)?
-4. **VE art and text.** VFE's About has no license. The plan says to ask the Vanilla Expanded team, or to draw our own
-   texture and write our own description. Which do you want? This blocks the Phase 2 texture.
-5. **Dressers Hold Clothing (Continued)** isn't installed here, so its packageId for `incompatibleWith` is still
-   unverified (`mlie.dressersholdclothing` is a guess).
+These settle the open questions raised by the verification. They aren't in the living plan doc yet.
+
+1. **Folder layout: root `Defs/` and `Patches/`**, not the plan's `1.6/Defs` and `1.6/Patches`. `LoadFolders.xml`
+   loads `/`, `1.6` (assembly only) and, without VFE, `NoVFE` + `NoVFE/1.6`. The shared tools are extended for this
+   layout: `tools/package.sh` copies `LoadFolders.xml` and `NoVFE/`, and `tools/rwdefs.py` also lints `NoVFE/1.6/Defs`
+   and the `NoVFE/Textures` paths. Why: the shared lint and package tools only handle root folders.
+2. **Harness changes approved.** Make them in this repo's `tools/`, keep them general (no mod-specific literals), and
+   port them to `rimworld-modding-center` afterwards (porting rule). Three changes are needed:
+   - Required dependencies that load **before** the mod (ASF). `autotest.py` only loads `CORE_MODS` before it, and
+     `MOD_EXTRA_MODS` loads after it.
+   - A save made **without** the mod, then loaded **with** it (T7, T12, T13, T14). Today the harness only does the
+     reverse, in `removal-check`.
+   - A save made with one mod set and loaded with another, VFE on or off (T15, T16).
+3. **Our wardrobe keeps bed comfort.** It gets VFE's `CompProperties_Facility` (Comfort +0.05, maxDistance 6,
+   maxSimultaneous 1) and a bed `linkableFacilities` patch for `Table_Wardrobe`. Both live under `NoVFE/` so they
+   don't double up with VFE's own `Linkables_Patch.xml`.
+4. **We draw our own wardrobe**: our own texture (SVG in `Art/`), description and stats. We copy no VE art or text;
+   only the defName `Table_Wardrobe` and the 2×1 size are shared, for save compatibility and capacity.
+5. **Incompatible mod: `Mlie.DressersHoldClothing`** (agent-resolved). This is the packageId in the mod's own
+   `About/About.xml` on GitHub (`emipa606/DressersHoldClothing`); its `PublishedFileId.txt` is `2584894865`, the
+   plan's Workshop ID.
 
 ## Verified details (2026-11-10)
 
@@ -81,6 +83,7 @@ and the installed ASF and VFE workshop folders (ASF ships its source under `Sour
 | Capacity | Vanilla `maxItemsInCell` is enough; ASF `Extension.maxItemsByCell` is optional. |
 | VFE wardrobe | `Table_Wardrobe` (label "wardrobe"), parent `VFE_WardrobeBase` → `ArtableFurnitureBase`. Size (2,1), so 15 per cell is right. drawSize (3,3); cost 60 stuff; MaxHitPoints 140, Mass 20, WorkToBuild 2500, Beauty 8, Flammability 1.0; fillPercent 0.6; research `ComplexFurniture`; `constructionSkillPrerequisite 5`; comps Facility and `CompProperties_Styleable`; `building/paintable`; textures `NewThings/Furniture/Wardrobe/Wardrobe_{north,east,south}`. It isn't storage and has no custom `thingClass`. The plan's placeholder stats (75, 160, 3000, 25, 5) are wrong. |
 | VFE's other wardrobe | `VFE_RoyalWardrobe` is in the same mod (out of scope per the plan). |
+| Dressers Hold Clothing (Continued) | packageId `Mlie.DressersHoldClothing`, Workshop 2584894865; supports 1.2–1.7 (from its GitHub `About/`). |
 
 ## Agent notes and gotchas
 
@@ -91,23 +94,25 @@ and the installed ASF and VFE workshop folders (ASF ships its source under `Sour
 
 ## Phase 0: Skeleton and test harness
 
-- [ ] Settle open questions 1 and 2
 - [ ] `About/About.xml`: name Tidy Threads, packageId `josh9817.tidythreads`, supportedVersions 1.6, `modDependencies`
-      Harmony and ASF, `loadAfter` both, `incompatibleWith` Dressers Hold Clothing (Continued)
-- [ ] `LoadFolders.xml` with the `IfModNotActive="VanillaExpanded.VFECore"` entries for `NoVFE` and `NoVFE/1.6`
+      Harmony and ASF, `loadAfter` both, `incompatibleWith` `Mlie.DressersHoldClothing`
+- [ ] `LoadFolders.xml`: `/`, `1.6`, and `NoVFE` + `NoVFE/1.6` with `IfModNotActive="VanillaExpanded.VFECore"`; defs and
+      patches go in root `Defs/` and `Patches/` (decision 1)
+- [ ] `tools/package.sh` copies `LoadFolders.xml` and `NoVFE/`; `tools/rwdefs.py` lints `NoVFE/1.6/Defs` and the
+      `NoVFE/Textures` paths (decision 1)
 - [ ] `Source/TidyThreads/TidyThreads.csproj`: net472, `Krafs.Rimworld.Ref` 1.6.4871, `Lib.Harmony` with
       `ExcludeAssets="runtime"`, `DebugType embedded`, output to `1.6/Assemblies/`; never ship `0Harmony.dll`
 - [ ] `TidyThreadsMod : Mod` runs `new Harmony("josh9817.tidythreads").PatchAll()` and logs one `[TidyThreads]` build-id line;
       `ApparelStorageExtension : DefModExtension`
 - [ ] Copy `tools/game-side/AutoTest.cs` and `Fixtures.cs` into `Source/TidyThreads/`, rename their namespaces, add the
       scenario runner with exact-name filtering (`docs/testing.md`)
-- [ ] Test harness: load ASF before the mod in the test profile (open question 2)
+- [ ] Test harness: required dependencies that load before the mod, such as ASF (decision 2)
 - [ ] Record the error baseline without the mod (Harmony + ASF): `tools/autotest.py baseline`
 - [ ] Start `docs/test-runs.md`
 
 ## Phase 1: Dresser becomes apparel storage
 
-- [ ] Dresser patch (plan § Dresser patch) with the ASF fields in Verified details; marker extension `capacity 20`;
+- [ ] Dresser patch (plan § Dresser patch) in `Patches/TT_Dresser.xml`, with the ASF fields in Verified details; marker extension `capacity 20`;
       `storageGroupTag TT_ApparelFurniture`
 - [ ] ASF GraphicsDef `TT_Dresser_Graphics` with `showContainedItems false`
 - [ ] **Prove T1 Build a dresser.** Research Complex furniture; build dressers in wood, steel and granite. Pass: the
@@ -122,11 +127,16 @@ and the installed ASF and VFE workshop folders (ASF ships its source under `Sour
 
 ## Phase 2: Wardrobe without VFE
 
-- [ ] Settle open questions 3 and 4
-- [ ] `NoVFE/1.6/Defs/ThingDefs_Buildings/TT_Wardrobe.xml`: plain copy of `Table_Wardrobe` (same defName, VFE's real
-      size and stats from Verified details), namespaced `TidyThreads/Furniture/Wardrobe` texture under `NoVFE/Textures/`
-      (SVG in `Art/`, exported with `tools/export-textures.sh`)
-- [ ] Wardrobe patch (`maxItemsInCell 15`, marker `capacity 30`) and GraphicsDef `TT_Wardrobe_Graphics`, always loaded
+- [ ] `NoVFE/1.6/Defs/ThingDefs_Buildings/TT_Wardrobe.xml`: our own plain-furniture wardrobe with defName
+      `Table_Wardrobe`, size (2,1), and our own description and stats (decision 4). It carries
+      `CompProperties_Facility` (Comfort +0.05, maxDistance 6, maxSimultaneous 1) and
+      `PlaceWorker_ShowFacilitiesConnections` (decision 3)
+- [ ] `NoVFE/1.6/Patches/TT_WardrobeBeds.xml`: add `Table_Wardrobe` to the beds' `linkableFacilities`, the same targets
+      VFE patches (decision 3)
+- [ ] Our own wardrobe texture: `Art/NoVFE/…` SVG → `NoVFE/Textures/TidyThreads/Furniture/Wardrobe_{north,east,south}.png`
+      via `tools/export-textures.sh` (decision 4; the tool's Art→Textures mapping may need the NoVFE path)
+- [ ] Wardrobe patch `Patches/TT_Wardrobe.xml` (`maxItemsInCell 15`, marker `capacity 30`) and GraphicsDef
+      `TT_Wardrobe_Graphics` in `Defs/`, always loaded
 - [ ] **Prove T2 Build a wardrobe, VFE not active.** With VFE disabled, build the wardrobe in wood, steel and granite.
       Pass: same as T1 with a 30-item limit; the texture renders in all four rotations. *Failure mode:* the NoVFE
       folder doesn't load, a texture is missing, or capacity is wrong.
@@ -149,7 +159,7 @@ and the installed ASF and VFE workshop folders (ASF ships its source under `Sour
 
 ## Phase 4: Dressers from saves made before the mod
 
-- [ ] Test harness: make a save without the mod and load it with the mod (open question 2)
+- [ ] Test harness: make a save without the mod and load it with the mod (decision 2)
 - [ ] Converter, tried in plan order and stopping at the first that passes T7: Option 1 (ASF built-in; Verified
       details predict a fail on settings); then Option 2 with Patch B only, redesigned to detect legacy dressers
       without the null check; then Fallback C
@@ -169,7 +179,7 @@ and the installed ASF and VFE workshop folders (ASF ships its source under `Sour
 ## Phase 5: Wardrobe with VFE, and VFE added to or removed from a save
 
 - [ ] Test harness: VFE as a test-only extra mod (`MOD_EXTRA_MODS=VanillaExpanded.VFECore`), and a save made with one mod
-      set loaded with another (open question 2)
+      set loaded with another (decision 2)
 - [ ] Check VFE's def is still plain furniture at build time; if it already is storage, step 3 becomes Replace
 - [ ] **Prove T15 Add VFE to a save.** VFE off: build 2 wardrobes, fill with 30 apparel each, set one to Normal, save.
       Enable VFE, restart, load. Pass: both wardrobes still exist with VFE's graphic, 60 items, one Normal and one
@@ -183,7 +193,7 @@ and the installed ASF and VFE workshop folders (ASF ships its source under `Sour
 
 ## Phase 6: Release
 
-- [ ] Settle open question 5 (`incompatibleWith` packageId)
+- [ ] Port the general tool changes (harness, package, lint, `ilspycmd` pin) to `rimworld-modding-center` (decision 2)
 - [ ] `About/Preview.png` (< 1 MB), README with the mod-removal warning (removal is unsupported per the plan: uninstall
       dressers first), LICENSE, CHANGELOG
 - [ ] `tools/package.sh` produces a `dist/TidyThreads` that includes `LoadFolders.xml` and `NoVFE/`
