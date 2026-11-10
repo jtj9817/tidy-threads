@@ -17,7 +17,7 @@ prefix `TT_`, Harmony id `josh9817.tidythreads`. The plan's placeholders map lik
 
 ## Progress
 
-- [ ] **Phase 0**: Skeleton and test harness
+- [x] **Phase 0**: Skeleton and test harness
 - [ ] **Phase 1**: Dresser becomes apparel storage
 - [ ] **Phase 2**: Wardrobe without VFE
 - [ ] **Phase 3**: Moving apparel into new dressers
@@ -27,12 +27,12 @@ prefix `TT_`, Harmony id `josh9817.tidythreads`. The plan's placeholders map lik
 
 ## Current state
 
-- **Next step:** start Phase 0. All open questions are settled (see Decisions).
-- **Last run:** none yet.
+- **Next step:** Phase 1 (dresser patch, T1, T3, T4).
+- **Last run:** 2026-11-10 smoke start with the mod: ready, 0 new errors (`docs/test-runs.md`).
 - **Environment (checked 2026-11-10):** game `1.6.4871 rev598`; Steam running; `dotnet`, `inkscape`, `Xvfb`, `xdotool`,
   `import` present. Workshop: Harmony (2009463077), ASF (3033901359) and VFE (1718190143) are installed;
   Dressers Hold Clothing (Continued) (2584894865) is not. `tools/vanilla.sh init` is done (`.tools/decomp`, 9213
-  files). Error baseline: not recorded yet.
+  files). Error baseline: 6 signatures (Harmony + Core + ASF, 2026-11-10).
 - Toolchain copied from `rimworld-modding-center` at `211fc88`.
 
 ## Decisions (user, 2026-11-10)
@@ -92,24 +92,31 @@ and the installed ASF and VFE workshop folders (ASF ships its source under `Sour
   has an older one. Install the version the other mods use first:
   `dotnet tool install ilspycmd --version 11.1.0.9782 --tool-path .tools/ilspy`. Worth fixing in the modding center.
 - Scenario names must not contain commas (the filter splits on them).
+- Run the harness as `source tools/env.sh && tools/autotest.py ...`: env.sh now exports the identity and `MOD_DEPS`
+  (ASF), which autotest.py reads from the environment. Before this, `tools/status.sh`'s call into autotest.py failed
+  with "set MOD_NAME and MOD_ID".
+- Tool changes to port in Phase 6: `MOD_DEPS` in autotest.py/env.sh (+ preflight install check, selftest clears it),
+  the env.sh `export` line, `rwdefs.py folders` and load-folder lint, `package.sh` load folders.
+- `TidyThreadsMod`'s constructor logs the build id and patches; `AutoTest.Init` runs from `TT`'s static constructor
+  (it creates a GameObject, so it waits until startup).
 
 ## Phase 0: Skeleton and test harness
 
-- [ ] `About/About.xml`: name Tidy Threads, packageId `josh9817.tidythreads`, supportedVersions 1.6, `modDependencies`
+- [x] `About/About.xml`: name Tidy Threads, packageId `josh9817.tidythreads`, supportedVersions 1.6, `modDependencies`
       Harmony and ASF, `loadAfter` both, `incompatibleWith` `Mlie.DressersHoldClothing`
-- [ ] `LoadFolders.xml`: `/`, `1.6`, and `NoVFE` + `NoVFE/1.6` with `IfModNotActive="VanillaExpanded.VFECore"`; defs and
+- [x] `LoadFolders.xml`: `/`, `1.6`, and `NoVFE` + `NoVFE/1.6` with `IfModNotActive="VanillaExpanded.VFECore"`; defs and
       patches go in root `Defs/` and `Patches/` (decision 1)
-- [ ] `tools/package.sh` copies `LoadFolders.xml` and `NoVFE/`; `tools/rwdefs.py` lints `NoVFE/1.6/Defs` and the
+- [x] `tools/package.sh` copies `LoadFolders.xml` and `NoVFE/`; `tools/rwdefs.py` lints `NoVFE/1.6/Defs` and the
       `NoVFE/Textures` paths (decision 1)
-- [ ] `Source/TidyThreads/TidyThreads.csproj`: net472, `Krafs.Rimworld.Ref` 1.6.4871, `Lib.Harmony` with
+- [x] `Source/TidyThreads/TidyThreads.csproj`: net472, `Krafs.Rimworld.Ref` 1.6.4871, `Lib.Harmony` with
       `ExcludeAssets="runtime"`, `DebugType embedded`, output to `1.6/Assemblies/`; never ship `0Harmony.dll`
-- [ ] `TidyThreadsMod : Mod` runs `new Harmony("josh9817.tidythreads").PatchAll()` and logs one `[TidyThreads]` build-id line;
+- [x] `TidyThreadsMod : Mod` runs `new Harmony("josh9817.tidythreads").PatchAll()` and logs one `[TidyThreads]` build-id line;
       `ApparelStorageExtension : DefModExtension`
-- [ ] Copy `tools/game-side/AutoTest.cs` and `Fixtures.cs` into `Source/TidyThreads/`, rename their namespaces, add the
+- [x] Copy `tools/game-side/AutoTest.cs` and `Fixtures.cs` into `Source/TidyThreads/`, rename their namespaces, add the
       scenario runner with exact-name filtering (`docs/testing.md`)
-- [ ] Test harness: required dependencies that load before the mod, such as ASF (decision 2)
-- [ ] Record the error baseline without the mod (Harmony + ASF): `tools/autotest.py baseline`
-- [ ] Start `docs/test-runs.md`
+- [x] Test harness: required dependencies that load before the mod, such as ASF (decision 2)
+- [x] Record the error baseline without the mod (Harmony + ASF): `tools/autotest.py baseline`
+- [x] Start `docs/test-runs.md`
 
 ## Phase 1: Dresser becomes apparel storage
 
