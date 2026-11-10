@@ -27,7 +27,7 @@ prefix `TT_`, Harmony id `josh9817.tidythreads`. The plan's placeholders map lik
 
 ## Current state
 
-- **Next step:** Phase 3 (T5, T6, T9, T10, T11).
+- **Next step:** Phase 3 (T5, T6, T9, T10, T11). Hand-off: `docs/handoff/20261110-2336-phases-3-to-5.md`.
 - **Last run:** 2026-11-10 T2: 1/1 PASS, 0 new errors (`docs/test-runs.md`).
 - **Environment (checked 2026-11-10):** game `1.6.4871 rev598`; Steam running; `dotnet`, `inkscape`, `Xvfb`, `xdotool`,
   `import` present. Workshop: Harmony (2009463077), ASF (3033901359) and VFE (1718190143) are installed;
