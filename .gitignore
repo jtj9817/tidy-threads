@@ -1,0 +1,44 @@
+# Local test state: log marks, error baselines, build ids, screenshots, the isolated test
+# profile (-savedatafolder), selftest scratch, hand-off/session state, usage log
+.devlog/
+
+# Local agent tooling: ilspycmd and the decompiled game source (derived from the game, never committed)
+.tools/
+
+# Build output of tools/removal-probe/RemovalProbe.csproj (tools/autotest.py removal-check)
+tools/removal-probe/obj/
+
+# Python bytecode from the stdlib tools (run with python3 -I)
+__pycache__/
+*.pyc
+
+# A packaged release copy, if tools/package.sh is ever run here or in an adopted copy
+dist/
+
+# Scratch/temp files from the shell tools (build.sh stages *.tmp; xvfb/stdout logs live under .devlog)
+*.tmp
+*.log
+
+# Machine-local agent settings; never publish local permissions or credentials.
+.claude/settings.local.json
+
+# Optional local environment/credential files (tools read exported shell variables).
+.env
+.env.*
+!.env.example
+
+# OS / editor
+.DS_Store
+Thumbs.db
+desktop.ini
+.vs/
+.vscode/
+.idea/
+*.user
+*.suo
+*.DotSettings.user
+
+# Mod build output: tools/build.sh installs the DLL into 1.6/Assemblies
+Source/**/bin/
+Source/**/obj/
+1.6/Assemblies/

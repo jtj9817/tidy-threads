@@ -1,0 +1,116 @@
+"""A fake RimWorld for tools/selftest.sh: speaks AutoTest.cs's file protocol so autotest.py can be tested without the
+game. Launched through ./RimWorldLinux with the real game's arguments.
+
+  FAKE_STARTUP_ERROR=1   log one red error at startup (autotest.py must count it)
+  FAKE_FAIL=<name>       that scenario FAILs
+Without -modcenter-autotest (a baseline or removal-check launch) it idles; when a Saves/autostart.rws exists it
+logs the load line and, with FAKE_REMOVAL_ERRORS=1, the errors a removed mod leaves, or with FAKE_LOAD_FAIL=1 the
+"long event" exception of a failed load.
+"""
+import json
+import os
+import subprocess
+import sys
+import threading
+import time
+from pathlib import Path
+
+args = sys.argv[1:]
+log_path = Path(args[args.index("-logFile") + 1])
+ctl_arg = [a.split("=", 1)[1] for a in args if a.startswith("-modcenter-autotest=")]
+if not ctl_arg:
+    # Baseline or removal-check run (no mod): log some vanilla noise, then idle until killed.
+    text = "Command line arguments: " + " ".join(args) + "\n"
+    data = Path(next(a.split("=", 1)[1] for a in args if a.startswith("-savedatafolder=")))
+    auto = data / "Saves" / "autostart.rws"
+    conflicting_start = auto.exists() and "-quicktest" in args
+    if auto.exists():
+        if conflicting_start:
+            text += ("Initializing new game with mods:\nException from asynchronous event: "
+                     "System.NullReferenceException: WorldObjects is null\n[Ref ABCD1234]\n  at Fake.InitNewGame ()\n")
+        else:
+            text += "Loading game from file autostart with mods:\n  - brrainz.harmony\n  - ludeon.rimworld\n"
+        if os.environ.get("FAKE_LOAD_FAIL"):
+            text += ("Exception from long event: System.NullReferenceException: Object reference not set to an "
+                     "instance of an object\n[Ref ABCD1234]\n  at Fake.Load ()\n")
+        elif os.environ.get("FAKE_REMOVAL_ERRORS"):
+            text += (f"Could not load reference to Verse.ThingDef named {os.environ.get('MOD_NAME', 'FakeMod')}_Stable\n"
+                     "Exception spawning loaded thing FakeThing: System.NullReferenceException\n"
+                     "Exception ticking FakeColonist: System.InvalidOperationException: DoBill on non-Billgiver.\n")
+    text += "Exception in fake startup: NullReferenceException\n[Ref ABCD1234]\n  at Fake.Startup ()\n"
+    log_path.write_text(text)
+    probe = next((a.split("=", 1)[1] for a in args if a.startswith("-modcenter-removal-probe=")), None)
+    if probe:
+        directory = Path(probe)
+        (directory / "heartbeat").write_text("fake observer")
+        failed = os.environ.get("FAKE_LOAD_FAIL") or conflicting_start
+        (directory / "result").write_text("FAIL: load failed" if failed else
+                                        "PASS: loaded, ticked, saved and reloaded without the mod")
+    while True:
+        time.sleep(1)
+ctl = Path(ctl_arg[0])
+devlog = Path(os.environ["MOD_DEVLOG"])
+mod = os.environ.get("MOD_NAME", "FakeMod")
+mod_root = (Path(os.environ["RW_DIR"]) / "Mods" / mod).resolve()
+stamp = mod_root / "BUILD"
+build = stamp.read_text().strip() if stamp.is_file() else (devlog / "last-build").read_text().strip()
+pid = os.getpid()
+launch = f"{time.strftime('%Y%m%d-%H%M%S', time.gmtime())}-{pid}"
+log = open(log_path, "w", buffering=1)
+beating = True
+
+
+def event(ev, **fields):
+    with open(ctl / "events.jsonl", "a") as f:
+        f.write(json.dumps(dict(ev=ev, launch=launch, pid=pid, **fields)) + "\n")
+
+
+def beat():
+    while beating:
+        (ctl / "heartbeat").write_text(launch + "\n")
+        time.sleep(1)
+
+
+log.write(f"Command line arguments: {' '.join(args)}\n")
+log.write(f"[{mod}] loaded build 0.1.0+{build}\n")
+if os.environ.get("FAKE_STARTUP_ERROR"):
+    log.write("Exception in fake startup: NullReferenceException\n[Ref ABCD1234]\n  at Fake.Startup ()\n")
+threading.Thread(target=beat, daemon=True).start()
+event("launched", build=f"0.1.0+{build}")
+time.sleep(2)  # "generating the quicktest map"
+event("ready", build=f"0.1.0+{build}", game="1.6.4871 rev598", map="(250, 1, 250)",
+      modRoot=str(devlog if os.environ.get("FAKE_WRONG_MOD_SOURCE") else mod_root))
+
+while True:
+    time.sleep(0.5)
+    cmd = ctl / "command"
+    if not cmd.exists():
+        continue
+    text = cmd.read_text().strip()
+    cmd.unlink()
+    cid, verb, arg = (text.split(" ", 2) + ["", ""])[:3]
+    log.write(f"[{mod}] autotest: command {text}\n")
+    if verb == "run":
+        verdicts = []
+        for name in ("Smoke", "Save and reload"):
+            if arg and not any(p.strip().lower() in name.lower() for p in arg.split(",")):
+                continue
+            verdict = "FAIL" if os.environ.get("FAKE_FAIL") == name else "PASS"
+            log.write(f"[{mod}] SCENARIO {name}: {verdict} in 300 ticks\n")
+            event("scenario", name=name, verdict=verdict, detail=f"{verdict} in 300 ticks")
+            verdicts.append(f"{name} {verdict}")
+        event("result", id=cid, passed=sum(v.endswith("PASS") for v in verdicts), total=len(verdicts), verdicts=verdicts)
+    elif verb == "restart":
+        # Like GenCommandLine.Restart: start a new process with the same command line, then quit.
+        event("restarting", id=cid)
+        subprocess.Popen([os.environ["FAKE_EXE"]] + args, start_new_session=True,
+                         stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        sys.exit(0)
+    elif verb == "quit":
+        event("quitting", id=cid)
+        sys.exit(0)
+    elif verb == "hang":
+        event("hanging", id=cid)
+        beating = False
+        while True:
+            time.sleep(1)
