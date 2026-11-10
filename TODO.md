@@ -19,7 +19,7 @@ prefix `TT_`, Harmony id `josh9817.tidythreads`. The plan's placeholders map lik
 
 - [x] **Phase 0**: Skeleton and test harness
 - [x] **Phase 1**: Dresser becomes apparel storage
-- [ ] **Phase 2**: Wardrobe without VFE
+- [x] **Phase 2**: Wardrobe without VFE
 - [ ] **Phase 3**: Moving apparel into new dressers
 - [ ] **Phase 4**: Dressers from saves made before the mod
 - [ ] **Phase 5**: Wardrobe with VFE, and VFE added to or removed from a save
@@ -27,8 +27,8 @@ prefix `TT_`, Harmony id `josh9817.tidythreads`. The plan's placeholders map lik
 
 ## Current state
 
-- **Next step:** Phase 2 (our wardrobe without VFE, T2).
-- **Last run:** 2026-11-10 T1, T3, T4: 3/3 PASS, 0 new errors (`docs/test-runs.md`).
+- **Next step:** Phase 3 (T5, T6, T9, T10, T11).
+- **Last run:** 2026-11-10 T2: 1/1 PASS, 0 new errors (`docs/test-runs.md`).
 - **Environment (checked 2026-11-10):** game `1.6.4871 rev598`; Steam running; `dotnet`, `inkscape`, `Xvfb`, `xdotool`,
   `import` present. Workshop: Harmony (2009463077), ASF (3033901359) and VFE (1718190143) are installed;
   Dressers Hold Clothing (Continued) (2584894865) is not. `tools/vanilla.sh init` is done (`.tools/decomp`, 9213
@@ -99,7 +99,8 @@ and the installed ASF and VFE workshop folders (ASF ships its source under `Sour
   project has no compile-time ASF reference. Builds and installs in scenarios go through vanilla paths:
   `Blueprint.TryReplaceWithSolidThing` + `Frame.CompleteConstruction`, `MinifyUtility.Uninstall`, `PlaceBlueprintForInstall`.
 - Tool changes to port in Phase 6: `MOD_DEPS` in autotest.py/env.sh (+ preflight install check, selftest clears it),
-  the env.sh `export` line, `rwdefs.py folders` and load-folder lint, `package.sh` load folders.
+  the env.sh `export` line, `rwdefs.py folders` and load-folder lint, `package.sh` load folders, and
+  `export-textures.sh` no longer erroring when there is no `Art/About/`.
 - `TidyThreadsMod`'s constructor logs the build id and patches; `AutoTest.Init` runs from `TT`'s static constructor
   (it creates a GameObject, so it waits until startup).
 
@@ -139,19 +140,28 @@ and the installed ASF and VFE workshop folders (ASF ships its source under `Sour
 
 ## Phase 2: Wardrobe without VFE
 
-- [ ] `NoVFE/1.6/Defs/ThingDefs_Buildings/TT_Wardrobe.xml`: our own plain-furniture wardrobe with defName
+- [x] `NoVFE/1.6/Defs/ThingDefs_Buildings/TT_Wardrobe.xml`: our own plain-furniture wardrobe with defName
       `Table_Wardrobe`, size (2,1), and our own description and stats (decision 4). It carries
       `CompProperties_Facility` (Comfort +0.05, maxDistance 6, maxSimultaneous 1) and
       `PlaceWorker_ShowFacilitiesConnections` (decision 3)
-- [ ] `NoVFE/1.6/Patches/TT_WardrobeBeds.xml`: add `Table_Wardrobe` to the beds' `linkableFacilities`, the same targets
+- [x] `NoVFE/1.6/Patches/TT_WardrobeBeds.xml`: add `Table_Wardrobe` to the beds' `linkableFacilities`, the same targets
       VFE patches (decision 3)
-- [ ] Our own wardrobe texture: `Art/NoVFE/…` SVG → `NoVFE/Textures/TidyThreads/Furniture/Wardrobe_{north,east,south}.png`
+- [x] Our own wardrobe texture: `Art/NoVFE/…` SVG → `NoVFE/Textures/TidyThreads/Furniture/Wardrobe_{north,east,south}.png`
       via `tools/export-textures.sh` (decision 4; the tool's Art→Textures mapping may need the NoVFE path)
-- [ ] Wardrobe patch `Patches/TT_Wardrobe.xml` (`maxItemsInCell 15`, marker `capacity 30`) and GraphicsDef
+- [x] Wardrobe patch `Patches/TT_Wardrobe.xml` (`maxItemsInCell 15`, marker `capacity 30`) and GraphicsDef
       `TT_Wardrobe_Graphics` in `Defs/`, always loaded
-- [ ] **Prove T2 Build a wardrobe, VFE not active.** With VFE disabled, build the wardrobe in wood, steel and granite.
+- [x] **Prove T2 Build a wardrobe, VFE not active.** With VFE disabled, build the wardrobe in wood, steel and granite.
       Pass: same as T1 with a 30-item limit; the texture renders in all four rotations. *Failure mode:* the NoVFE
       folder doesn't load, a texture is missing, or capacity is wrong.
+- T2 proved by run build `6e2179c-dirty.20261110T233235Z` (1/1 PASS, 0 new errors). Its scenario name is
+  `T2 Build a wardrobe VFE not active`: the plan title's comma can't be in a name. T2 also checks the bed links
+  `Table_Wardrobe` exactly once (decision 3), at def level; the rotation check reads each rotation's material texture,
+  not a screenshot.
+- Our wardrobe: `ArtableFurnitureBase` (quality and art, like the dresser and VFE's), drawSize (2,2), 256 px textures,
+  cost 70, HP 150, work 2600, mass 22, beauty 6, `uiOrder` 2071.
+- The wardrobe patch also sets `surfaceType Item` and `canOverlapZones false` (Replace or Add), which the plan's patch
+  lacks: neither wardrobe def has them, and items can only lie on a pass-through building with `surfaceType Item`
+  (`GenPlace`). The dresser already has both.
 
 ## Phase 3: Moving apparel into new dressers
 

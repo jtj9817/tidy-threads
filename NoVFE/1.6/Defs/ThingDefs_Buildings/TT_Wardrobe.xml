@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Defs>
+  <!-- Loaded only when Vanilla Furniture Expanded is NOT active (LoadFolders.xml). It keeps VFE's defName so saves
+       survive VFE being added or removed, and VFE's 2×1 size for 15 per cell = 30. Everything else is our own:
+       texture, description and stats. Plain furniture: Patches/TT_Wardrobe.xml adds the storage to whichever wardrobe
+       def is loaded. No VFE Framework classes or comps. -->
+  <ThingDef ParentName="ArtableFurnitureBase">
+    <defName>Table_Wardrobe</defName>
+    <label>wardrobe</label>
+    <description>A tall double-doored cabinet with a hanging rail. Gives a small comfort bonus to all nearby beds. Placing more than one wardrobe near the same bed has no effect.</description>
+    <graphicData>
+      <!-- Our own namespaced path, so it never overrides VFE's texture. -->
+      <texPath>TidyThreads/Furniture/Wardrobe</texPath>
+      <graphicClass>Graphic_Multi</graphicClass>
+      <drawSize>(2,2)</drawSize>
+      <damageData>
+        <cornerTL>Damage/Corner</cornerTL>
+        <cornerTR>Damage/Corner</cornerTR>
+        <cornerBL>Damage/Corner</cornerBL>
+        <cornerBR>Damage/Corner</cornerBR>
+      </damageData>
+    </graphicData>
+    <size>(2,1)</size>
+    <rotatable>true</rotatable>
+    <defaultPlacingRot>South</defaultPlacingRot>
+    <altitudeLayer>Building</altitudeLayer>
+    <passability>PassThroughOnly</passability>
+    <pathCost>42</pathCost>
+    <fillPercent>0.5</fillPercent>
+    <castEdgeShadows>true</castEdgeShadows>
+    <staticSunShadowHeight>0.6</staticSunShadowHeight>
+    <stuffCategories>
+      <li>Metallic</li>
+      <li>Woody</li>
+      <li>Stony</li>
+    </stuffCategories>
+    <costStuffCount>70</costStuffCount>
+    <statBases>
+      <MaxHitPoints>150</MaxHitPoints>
+      <Mass>22</Mass>
+      <WorkToBuild>2600</WorkToBuild>
+      <Flammability>1.0</Flammability>
+      <Beauty>6</Beauty>
+    </statBases>
+    <uiOrder>2071</uiOrder>
+    <researchPrerequisites>
+      <li>ComplexFurniture</li>
+    </researchPrerequisites>
+    <placeWorkers>
+      <li>PlaceWorker_ShowFacilitiesConnections</li>
+    </placeWorkers>
+    <building>
+      <paintable>true</paintable>
+    </building>
+    <comps>
+      <!-- The same bed comfort as the dresser; NoVFE/1.6/Patches/TT_WardrobeBeds.xml links it to the beds. -->
+      <li Class="CompProperties_Facility">
+        <statOffsets>
+          <Comfort>0.05</Comfort>
+        </statOffsets>
+        <maxSimultaneous>1</maxSimultaneous>
+        <maxDistance>6</maxDistance>
+      </li>
+    </comps>
+  </ThingDef>
+</Defs>

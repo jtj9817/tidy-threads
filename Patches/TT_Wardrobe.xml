@@ -1,0 +1,130 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Patch>
+  <!-- The wardrobe becomes apparel-only storage: 15 per cell × 2 cells = 30, Critical by default (plan § Wardrobe
+       patch). Always loaded: it converts VFE's Table_Wardrobe when VFE is active, and our NoVFE copy (same defName)
+       when it isn't, so there is one code path. Everything else is the dresser patch with the defName swapped. -->
+
+  <!-- 1. ASF's storage class. Neither wardrobe has its own thingClass, so this normally takes the nomatch Add. -->
+  <Operation Class="PatchOperationConditional">
+    <xpath>Defs/ThingDef[defName="Table_Wardrobe"]/thingClass</xpath>
+    <match Class="PatchOperationReplace">
+      <xpath>Defs/ThingDef[defName="Table_Wardrobe"]/thingClass</xpath>
+      <value><thingClass>AdaptiveStorage.ThingClass</thingClass></value>
+    </match>
+    <nomatch Class="PatchOperationAdd">
+      <xpath>Defs/ThingDef[defName="Table_Wardrobe"]</xpath>
+      <value><thingClass>AdaptiveStorage.ThingClass</thingClass></value>
+    </nomatch>
+  </Operation>
+
+  <!-- ASF draws in real time too (AdaptiveStorageBase); both wardrobes inherit MapMeshOnly. -->
+  <Operation Class="PatchOperationConditional">
+    <xpath>Defs/ThingDef[defName="Table_Wardrobe"]/drawerType</xpath>
+    <match Class="PatchOperationReplace">
+      <xpath>Defs/ThingDef[defName="Table_Wardrobe"]/drawerType</xpath>
+      <value><drawerType>MapMeshAndRealTime</drawerType></value>
+    </match>
+    <nomatch Class="PatchOperationAdd">
+      <xpath>Defs/ThingDef[defName="Table_Wardrobe"]</xpath>
+      <value><drawerType>MapMeshAndRealTime</drawerType></value>
+    </nomatch>
+  </Operation>
+
+  <!-- The other ThingDef-level fields AdaptiveStorageBase sets that the wardrobes lack. -->
+  <Operation Class="PatchOperationAdd">
+    <xpath>Defs/ThingDef[defName="Table_Wardrobe"]</xpath>
+    <value>
+      <drawGUIOverlay>true</drawGUIOverlay>
+      <pathCostIgnoreRepeat>true</pathCostIgnoreRepeat>
+    </value>
+  </Operation>
+
+  <!-- Items can lie on a pass-through building only with surfaceType Item (GenPlace); the dresser has it, the
+       wardrobes don't. ASF's base also keeps zones off storage. -->
+  <Operation Class="PatchOperationConditional">
+    <xpath>Defs/ThingDef[defName="Table_Wardrobe"]/surfaceType</xpath>
+    <match Class="PatchOperationReplace">
+      <xpath>Defs/ThingDef[defName="Table_Wardrobe"]/surfaceType</xpath>
+      <value><surfaceType>Item</surfaceType></value>
+    </match>
+    <nomatch Class="PatchOperationAdd">
+      <xpath>Defs/ThingDef[defName="Table_Wardrobe"]</xpath>
+      <value><surfaceType>Item</surfaceType></value>
+    </nomatch>
+  </Operation>
+  <Operation Class="PatchOperationConditional">
+    <xpath>Defs/ThingDef[defName="Table_Wardrobe"]/canOverlapZones</xpath>
+    <match Class="PatchOperationReplace">
+      <xpath>Defs/ThingDef[defName="Table_Wardrobe"]/canOverlapZones</xpath>
+      <value><canOverlapZones>false</canOverlapZones></value>
+    </match>
+    <nomatch Class="PatchOperationAdd">
+      <xpath>Defs/ThingDef[defName="Table_Wardrobe"]</xpath>
+      <value><canOverlapZones>false</canOverlapZones></value>
+    </nomatch>
+  </Operation>
+
+  <!-- 2. Make sure a <building> node exists (both wardrobes have one, for paintable). -->
+  <Operation Class="PatchOperationConditional">
+    <xpath>Defs/ThingDef[defName="Table_Wardrobe"]/building</xpath>
+    <nomatch Class="PatchOperationAdd">
+      <xpath>Defs/ThingDef[defName="Table_Wardrobe"]</xpath>
+      <value><building /></value>
+    </nomatch>
+  </Operation>
+
+  <!-- 3. Storage behaviour. blueprintClass gives the blueprint its Storage tab (T4). -->
+  <Operation Class="PatchOperationAdd">
+    <xpath>Defs/ThingDef[defName="Table_Wardrobe"]/building</xpath>
+    <value>
+      <maxItemsInCell>15</maxItemsInCell>
+      <preventDeteriorationOnTop>true</preventDeteriorationOnTop>
+      <ignoreStoredThingsBeauty>true</ignoreStoredThingsBeauty>
+      <blueprintClass>Blueprint_Storage</blueprintClass>
+      <!-- Dressers and wardrobes link only with each other, never with shelves. -->
+      <storageGroupTag>TT_ApparelFurniture</storageGroupTag>
+      <fixedStorageSettings>
+        <filter>
+          <categories>
+            <li>Apparel</li>
+          </categories>
+        </filter>
+      </fixedStorageSettings>
+      <!-- A default, not a lock: players may lower it per wardrobe. -->
+      <defaultStorageSettings>
+        <priority>Critical</priority>
+        <filter>
+          <categories>
+            <li>Apparel</li>
+          </categories>
+        </filter>
+      </defaultStorageSettings>
+    </value>
+  </Operation>
+
+  <!-- 4. Storage tab. Both wardrobes inherit ITab_Art; a child list merges with the parent's. -->
+  <Operation Class="PatchOperationConditional">
+    <xpath>Defs/ThingDef[defName="Table_Wardrobe"]/inspectorTabs</xpath>
+    <match Class="PatchOperationAdd">
+      <xpath>Defs/ThingDef[defName="Table_Wardrobe"]/inspectorTabs</xpath>
+      <value><li>ITab_Storage</li></value>
+    </match>
+    <nomatch Class="PatchOperationAdd">
+      <xpath>Defs/ThingDef[defName="Table_Wardrobe"]</xpath>
+      <value><inspectorTabs><li>ITab_Storage</li></inspectorTabs></value>
+    </nomatch>
+  </Operation>
+
+  <!-- 5. Marker read by the C# converter and the scenarios. -->
+  <Operation Class="PatchOperationConditional">
+    <xpath>Defs/ThingDef[defName="Table_Wardrobe"]/modExtensions</xpath>
+    <match Class="PatchOperationAdd">
+      <xpath>Defs/ThingDef[defName="Table_Wardrobe"]/modExtensions</xpath>
+      <value><li Class="TidyThreads.ApparelStorageExtension"><capacity>30</capacity></li></value>
+    </match>
+    <nomatch Class="PatchOperationAdd">
+      <xpath>Defs/ThingDef[defName="Table_Wardrobe"]</xpath>
+      <value><modExtensions><li Class="TidyThreads.ApparelStorageExtension"><capacity>30</capacity></li></modExtensions></value>
+    </nomatch>
+  </Operation>
+</Patch>

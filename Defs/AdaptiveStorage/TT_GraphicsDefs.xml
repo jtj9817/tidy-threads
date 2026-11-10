@@ -6,4 +6,11 @@
     <targetDef>Dresser</targetDef>
     <showContainedItems>false</showContainedItems>
   </AdaptiveStorage.GraphicsDef>
+
+  <!-- Table_Wardrobe exists with or without VFE (VFE's or our NoVFE copy), so this stays always loaded. -->
+  <AdaptiveStorage.GraphicsDef>
+    <defName>TT_Wardrobe_Graphics</defName>
+    <targetDef>Table_Wardrobe</targetDef>
+    <showContainedItems>false</showContainedItems>
+  </AdaptiveStorage.GraphicsDef>
 </Defs>

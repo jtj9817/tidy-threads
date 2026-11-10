@@ -18,6 +18,8 @@ namespace TidyThreads
             ("T1 Build a dresser", T1BuildADresser),
             ("T3 Minified and reinstalled", T3MinifiedAndReinstalled),
             ("T4 Blueprint settings", T4BlueprintSettings),
+            // Phase 2: the wardrobe without VFE
+            ("T2 Build a wardrobe VFE not active", T2BuildAWardrobeVfeNotActive),
         };
 
         private const string AsfThingClass = "AdaptiveStorage.ThingClass";

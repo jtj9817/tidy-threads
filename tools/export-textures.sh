@@ -16,7 +16,8 @@ command -v inkscape >/dev/null || die "inkscape not found"
 if (( $# )); then
   svgs=("$@")
 else
-  mapfile -t svgs < <(find "$REPO/Art" -name '*.svg' -not -path "$REPO/Art/About/*" | sort; find "$REPO/Art/About" -name '*.svg' | sort)
+  mapfile -t svgs < <(find "$REPO/Art" -name '*.svg' -not -path "$REPO/Art/About/*" | sort
+                      [[ ! -d "$REPO/Art/About" ]] || find "$REPO/Art/About" -name '*.svg' | sort)
 fi
 (( ${#svgs[@]} )) || die "no SVGs under Art/"
 

@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Patch>
+  <!-- Beds take comfort from our wardrobe. The same targets as VFE's own Linkables_Patch.xml, which links its wardrobe
+       when VFE is active; this file loads only without VFE, so the link never doubles up. -->
+  <Operation Class="PatchOperationAdd">
+    <xpath>Defs/ThingDef[@Name="BasicBedBase" or defName="HospitalBed" or defName="Bedroll" or defName="BedrollDouble"]/comps/li[@Class="CompProperties_AffectedByFacilities"]/linkableFacilities</xpath>
+    <value>
+      <li>Table_Wardrobe</li>
+    </value>
+  </Operation>
+</Patch>

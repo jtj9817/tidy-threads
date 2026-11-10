@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256">
+  <!-- Tidy Threads wardrobe, front (south). Grayscale: the game tints it with the stuff colour. -->
+  <g stroke="#2e2e2e" stroke-width="5" stroke-linejoin="round">
+    <rect x="24" y="226" width="20" height="20" rx="3" fill="#a8a8a8"/>
+    <rect x="212" y="226" width="20" height="20" rx="3" fill="#a8a8a8"/>
+    <rect x="14" y="32" width="228" height="200" rx="4" fill="#d6d6d6"/>
+    <rect x="14" y="210" width="228" height="22" fill="#bdbdbd"/>
+    <rect x="6" y="16" width="244" height="24" rx="4" fill="#ebebeb"/>
+  </g>
+  <g stroke="#454545" stroke-width="3" fill="#cacaca">
+    <rect x="26" y="50" width="98" height="152" rx="3"/>
+    <rect x="132" y="50" width="98" height="152" rx="3"/>
+  </g>
+  <g stroke="#5a5a5a" stroke-width="2" fill="#d2d2d2">
+    <rect x="38" y="62" width="74" height="58" rx="2"/>
+    <rect x="38" y="132" width="74" height="58" rx="2"/>
+    <rect x="144" y="62" width="74" height="58" rx="2"/>
+    <rect x="144" y="132" width="74" height="58" rx="2"/>
+  </g>
+  <g stroke="#2e2e2e" stroke-width="2" fill="#7c7c7c">
+    <rect x="112" y="110" width="7" height="34" rx="3"/>
+    <rect x="137" y="110" width="7" height="34" rx="3"/>
+  </g>
+  <rect x="14" y="40" width="228" height="6" fill="#000" opacity="0.12"/>
+</svg>
