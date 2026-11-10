@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<loadFolders>
+  <v1.6>
+    <li>/</li>
+    <li>1.6</li>
+    <!-- Our wardrobe, its texture and its bed link load only when VFE's own wardrobe is absent. -->
+    <li IfModNotActive="VanillaExpanded.VFECore">NoVFE</li>
+    <li IfModNotActive="VanillaExpanded.VFECore">NoVFE/1.6</li>
+  </v1.6>
+</loadFolders>
