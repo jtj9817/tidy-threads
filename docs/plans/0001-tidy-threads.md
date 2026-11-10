@@ -1,4 +1,4 @@
-<!-- Snapshot of the living design doc https://claude.ai/artifact/DmZxu6jsgd5qVrcYTtZhTz (rev 20, read 2026-11-10).
+<!-- Snapshot of the living design doc https://claude.ai/artifact/DmZxu6jsgd5qVrcYTtZhTz (rev 21, read 2026-11-10).
      The living doc is canonical: change it first, then refresh this snapshot. Placeholder names in it
      ("Closet Space", ClosetSpace, CS_, yourname.closetspace) map to Tidy Threads: TidyThreads, TT_, josh9817.tidythreads. -->
 
@@ -43,6 +43,20 @@ Gameplay facts below come from the wiki pages opened on 2026-11-10; anything mar
 **Wardrobe decision****: resolved.** The mod duplicates VFE's wardrobe for players without VFE and converts VFE's own when VFE is active. The switch is a `LoadFolders.xml` entry with `IfModNotActive`, which the wiki documents for 1.6 ([Mod Folder Structure](https://rimworldwiki.com/wiki/Modding_Tutorials/Mod_Folder_Structure), edited 24 Oct 2026). Our copy keeps VFE's defName so saves survive VFE being added or removed.
 
 **Before shipping VFE's files:** no license for Vanilla Expanded's textures or XML turned up in research, and community updates of VE mods state they were made with permission. Ask the Vanilla Expanded team before redistributing their texture or description, or draw your own texture and write your own description and stats.
+
+## Decisions (2026-11-10)
+
+Five decisions settle the open questions; where a section below differs, these win. The repo's `TODO.md` records the verification behind them.
+
+| # | Decision | Replaces |
+| --- | --- | --- |
+| 1 | Defs and patches live in root `Defs/` and `Patches/`. `LoadFolders.xml` loads `/`, `1.6` (assembly only) and, without VFE, `NoVFE` + `NoVFE/1.6`. The shared package and lint tools are extended for `LoadFolders.xml` and `NoVFE/`. | The `1.6/Defs` and `1.6/Patches` paths in Mod folder structure |
+| 2 | The test harness gains three general changes, ported back to the modding center: required dependencies (ASF) load before the mod; a save made without the mod loads with it (T7, T12–T14); a save made with VFE on loads with VFE off, and the reverse (T15, T16). | — |
+| 3 | Our wardrobe keeps bed comfort: a `CompProperties_Facility` (Comfort +0.05, maxDistance 6, maxSimultaneous 1) and a bed `linkableFacilities` patch, both under `NoVFE/` so they don't double up with VFE's own link. | "Plain furniture" with no comps, for the comfort facility only |
+| 4 | We draw our own wardrobe texture and write our own description and stats. Only the defName `Table_Wardrobe` and the 2×1 size are shared with VFE. | Copying VFE's texture, description and stats |
+| 5 | `incompatibleWith` is `Mlie.DressersHoldClothing`, the packageId in that mod's own About.xml (Workshop 2584894865). | `mlie.dressersholdclothing` (unverified) |
+
+Verified facts: the VFE wardrobe defName is `Table_Wardrobe` (size 2×1); packageIds are `brrainz.harmony`, `adaptive.storage.framework` and `VanillaExpanded.VFECore`. ASF already converts a saved `Building` to its class, so Patch A isn't needed; Patch B's null check can't work as written, because ASF sets `settings` during loading.
 
 ## Dependencies and About.xml
 

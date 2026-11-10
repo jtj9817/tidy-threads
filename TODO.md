@@ -37,7 +37,8 @@ prefix `TT_`, Harmony id `josh9817.tidythreads`. The plan's placeholders map lik
 
 ## Decisions (user, 2026-11-10)
 
-These settle the open questions raised by the verification. They aren't in the living plan doc yet.
+These settle the open questions raised by the verification. They are in the living plan doc's Decisions section
+(rev 21) and its snapshot.
 
 1. **Folder layout: root `Defs/` and `Patches/`**, not the plan's `1.6/Defs` and `1.6/Patches`. `LoadFolders.xml`
    loads `/`, `1.6` (assembly only) and, without VFE, `NoVFE` + `NoVFE/1.6`. The shared tools are extended for this
