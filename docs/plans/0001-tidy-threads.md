@@ -46,7 +46,7 @@ Gameplay facts below come from the wiki pages opened on 2026-11-10; anything mar
 
 ## Decisions (2026-11-10)
 
-Seven decisions settle the open questions; where a section below differs, these win. The repo's `TODO.md` records the verification behind them.
+Ten decisions settle the open questions; where a section below differs, these win. The repo's `TODO.md` records the verification behind them.
 
 | # | Decision | Replaces |
 | --- | --- | --- |
@@ -57,6 +57,9 @@ Seven decisions settle the open questions; where a section below differs, these 
 | 5 | `incompatibleWith` is `Mlie.DressersHoldClothing`, the packageId in that mod's own About.xml (Workshop 2584894865). | `mlie.dressersholdclothing` (unverified) |
 | 6 | The pre-mod save for T7 and T12–T14 is built by a separate test-only helper mod, loaded without Tidy Threads. It references nothing from the mod and never ships in the release package. | — |
 | 7 | The goal is apparel storage; bed comfort from dressers and wardrobes doesn't matter. Scenarios assert storage behaviour, not the comfort link. The comfort facility itself stays (decision 3). | T2's bed-link check |
+| 8 | T12 checks the room role only, not comfort. Dressers and wardrobes are independent of beds: usually paired with them, but a storeroom may hold only dressers and wardrobes. | T12's comfort half |
+| 9 | T12 runs on a fresh map with fixture rooms: a room with a bed, 2 dressers and a wardrobe is a Bedroom, and a room with only 2 dressers and a wardrobe is a Storeroom. A converted dresser has the same class as a new one, so no pre-mod save is needed. | T12's setup "in the T7 save" |
+| 10 | VFE runs (T15–T17) use their own error baseline: Harmony + Core + ASF + VE Framework + VFE, without Tidy Threads. The harness picks the baseline that matches the launched mod set; this mod's own errors always count. | — |
 
 Verified facts: the VFE wardrobe defName is `Table_Wardrobe` (size 2×1); packageIds are `brrainz.harmony`, `adaptive.storage.framework` and `VanillaExpanded.VFECore`. ASF already converts a saved `Building` to its class, so Patch A isn't needed; Patch B's null check can't work as written, because ASF sets `settings` during loading.
 
@@ -638,7 +641,7 @@ Tests cover creating dressers and wardrobes, then moving apparel into them, incl
 | ID | Scenario | Steps | Pass when |
 |---|---|---|---|
 | T7 | Conversion | Without the mod: build 2 dressers (one Excellent with art), drop 15 apparel on the floor, save. Add the mod, load | Log shows the conversion message twice; both dressers have the Storage tab, Critical, Apparel; position, rotation, stuff, HP, quality and art title unchanged; haulers move the 15 items in |
-| T12 | Bedroom and comfort | In the T7 save, fill a bedroom's dresser | Room still reads Bedroom; the bed's comfort still includes the dresser's +0.05 |
+| T12 | Bedroom and comfort | Fresh map: a room with a bed, 2 dressers and a wardrobe; a room with only 2 dressers and a wardrobe (decisions 8, 9) | The first room is a Bedroom; the second is a Storeroom |
 | T13 | Uninstall and deconstruct while full | Uninstall one full dresser, deconstruct another | All contents drop nearby; none deleted; no errors |
 | T14 | Save and reload | Set one converted dresser to Normal, save, reload twice | Contents identical; that dresser stays Normal; the others stay Critical |
 

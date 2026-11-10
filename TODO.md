@@ -28,8 +28,7 @@ prefix `TT_`, Harmony id `josh9817.tidythreads`. The plan's placeholders map lik
 ## Current state
 
 - **Next step:** Phase 4 (pre-mod save harness, converter, T7, T12–T14). Hand-off: `docs/handoff/20261110-2336-phases-3-to-5.md`.
-- **Open questions for the user:** T12's exact room-role pass condition; a separate error baseline for the VFE runs
-  (Harmony + Core + ASF + VE Framework + VFE, no mod).
+- **Open questions for the user:** none.
 - **Last run:** 2026-11-10 T5, T6, T9, T10, T11: 5/5 PASS, 0 new errors (`docs/test-runs.md`).
 - **Environment (checked 2026-11-10):** game `1.6.4871 rev598`; Steam running; `dotnet`, `inkscape`, `Xvfb`, `xdotool`,
   `import` present. Workshop: Harmony (2009463077), ASF (3033901359) and VFE (1718190143) are installed;
@@ -40,7 +39,7 @@ prefix `TT_`, Harmony id `josh9817.tidythreads`. The plan's placeholders map lik
 ## Decisions (user, 2026-11-10)
 
 These settle the open questions raised by the verification. They are in the living plan doc's Decisions section
-(rev 23) and its snapshot.
+(rev 26) and its snapshot.
 
 1. **Folder layout: root `Defs/` and `Patches/`**, not the plan's `1.6/Defs` and `1.6/Patches`. `LoadFolders.xml`
    loads `/`, `1.6` (assembly only) and, without VFE, `NoVFE` + `NoVFE/1.6`. The shared tools are extended for this
@@ -68,6 +67,11 @@ These settle the open questions raised by the verification. They are in the livi
    the comfort link; T2's bed-link check was removed. The comfort facility itself stays (decision 3).
 8. **T12 checks the room role only, not comfort** (user, 2026-11-10). Dressers and wardrobes are independent of beds:
    usually paired with them, but a storeroom may hold only dressers and wardrobes.
+9. **T12's pass condition** (user, 2026-11-10): on a fresh map, a fixture room with a bed, 2 dressers and a wardrobe
+   is a Bedroom, and one with only 2 dressers and a wardrobe is a Storeroom. No pre-mod save (a converted dresser
+   has the same class as a new one).
+10. **A separate error baseline for VFE runs** (user, 2026-11-10): Harmony + Core + ASF + VE Framework + VFE, no mod.
+    The harness keeps one baseline file per extra-mod set and picks the one matching the launch.
 
 ## Verified details (2026-11-10)
 
@@ -207,9 +211,9 @@ and the installed ASF and VFE workshop folders (ASF ships its source under `Sour
       save. Add the mod and load. Pass: the log shows the conversion message twice; both dressers have the Storage tab,
       Critical and Apparel; position, rotation, stuff, HP, quality and art title are unchanged; haulers move the 15
       items in. *Failure mode:* class not swapped, empty settings, or lost quality or art.
-- [ ] **Prove T12 Bedroom and comfort** (scope changed by the user, 2026-11-10): the comfort half is dropped; only the
-      room-role check stays, and dressers and wardrobes aren't tied to bedrooms. Exact pass condition pending the
-      user's answer (see Current state). *Failure mode:* a room's role is wrong because of the apparel furniture.
+- [ ] **Prove T12 Bedroom and comfort** (decisions 8, 9): fresh map; a fixture room with a bed, 2 dressers and a
+      wardrobe is a Bedroom; one with only 2 dressers and a wardrobe is a Storeroom. *Failure mode:* a room's role is
+      wrong because of the apparel furniture.
 - [ ] **Prove T13 Uninstall and deconstruct while full.** Uninstall one full dresser and deconstruct another. Pass: all
       contents drop nearby, none are deleted, no errors. *Failure mode:* contents vanish (the 1.6 outfit stand bug).
 - [ ] **Prove T14 Save and reload.** Set one converted dresser to Normal, save, reload twice. Pass: contents identical;
