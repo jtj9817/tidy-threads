@@ -3,6 +3,7 @@
   <name>Tidy Threads</name>
   <author>josh9817</author>
   <packageId>josh9817.tidythreads</packageId>
+  <modVersion>1.0.0</modVersion>
   <supportedVersions>
     <li>1.6</li>
   </supportedVersions>
