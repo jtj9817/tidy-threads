@@ -23,18 +23,18 @@ prefix `TT_`, Harmony id `josh9817.tidythreads`. The plan's placeholders map lik
 - [x] **Phase 3**: Moving apparel into new dressers
 - [x] **Phase 4**: Dressers from saves made before the mod
 - [x] **Phase 5**: Wardrobe with VFE, and VFE added to or removed from a save
-- [ ] **Phase 6**: Release
+- [x] **Phase 6**: Release
 
 ## Current state
 
-- **Next step:** settle T11's gate failure (open question), then tick the release gate and Phase 6.
-- **Open questions for the user:** T11 failed in the release gate's sequence and passed alone (Phase 6). Should T11
-  end colonists' current jobs when it builds its fixture and log the job's def, then rerun the gate's launch A? Or
-  accept the solo PASS?
+- **Next step:** none; every phase is done. The release package is `dist/TidyThreads`, build `7477b69.20261111T030637Z`.
+- **Open questions for the user:** none. T11, which failed in the first gate's sequence, passed in sequence right after
+  T10 in the second gate (2026-11-11), so it was left unchanged. If it fails in sequence again, end colonists'
+  current jobs in its fixture and log the job's def.
 - **[TT-001](docs/tickets/TT-001-apparel-lost-when-full-furniture-is-removed.md) fixed** (decisions 11, 12): dressers
   and wardrobes are emptied before deconstruction, uninstalling or destruction; T13 runs on a crowded site with three
   dressers and proves all three. The release gate reruns on a new package (user, 2026-11-11).
-- **Last run:** 2026-11-11 TT-001: T13 (crowded), T14 and T3, each 1/1 PASS, 0 new errors (`docs/test-runs.md`). The game reports `rev600` since
+- **Last run:** 2026-11-11 release gate on package `7477b69.20261111T030637Z`: 17/17 PASS, 0 new errors (`docs/test-runs.md`). The game reports `rev600` since
   2026-11-11 (it was `rev598`).
 - **Environment (checked 2026-11-10):** game `1.6.4871 rev598`; Steam running; `dotnet`, `inkscape`, `Xvfb`, `xdotool`,
   `import` present. Workshop: Harmony (2009463077), ASF (3033901359) and VFE (1718190143) are installed;
@@ -293,11 +293,16 @@ and the installed ASF and VFE workshop folders (ASF ships its source under `Sour
       modding center `44c47db` and `0542d72` (pkg-run takes `--premod`/`--from-save`/`--switch-mods` for the gate), selftest 31/31 ok in both repos (2026-11-11). `vanilla.sh` now pins `ilspycmd` 11.1.0.9782
       (`MOD_ILSPY_VERSION` overrides). The user's uncommitted `README.md` and `docs/wiki/` there were left alone.
       Queen Bee and Quadrunner were not updated (their repos are off limits from here).
-- [ ] `About/Preview.png` (< 1 MB), README with the mod-removal warning (removal is unsupported per the plan: uninstall
+- [x] `About/Preview.png` (< 1 MB: 119 KB), README with the mod-removal warning (removal is unsupported per the plan: uninstall
       dressers first), LICENSE, CHANGELOG
-- [ ] `tools/package.sh` produces a `dist/TidyThreads` that includes `LoadFolders.xml` and `NoVFE/`
-- [ ] Release gate (user-started or user-approved only): T1–T17 on the packaged copy via `tools/autotest.py pkg-run`
+- [x] `tools/package.sh` produces a `dist/TidyThreads` that includes `LoadFolders.xml` and `NoVFE/` (checked on `7477b69.20261111T030637Z`)
+- [x] Release gate (user-started or user-approved only): T1–T17 on the packaged copy via `tools/autotest.py pkg-run`
       Run 2026-11-11 on package `2c3e271.20261111T012806Z` (approved with the Phase 6 request), six `pkg-run` launches
       (quicktest VFE off; `--premod` T7; `--premod` T13–T14; `--switch-mods` none→VFE; VFE→none; VFE fresh): 16/17 PASS,
       0 new errors. **T11 failed inside the gate sequence** (1 colonist job aimed at the walled-in dresser's cell, no item
-      moved; it ran right after T10) and **passed alone** on the same package. Open: how to settle it (question below).
+      moved; it ran right after T10) and **passed alone** on the same package.
+      **Rerun 2026-11-11 after TT-001** (user-requested) on package `7477b69.20261111T030637Z`, the same six launches:
+      **17/17 PASS, 0 new errors.** T11 passed in sequence. Launch D's first try passed both T15 halves but logged one
+      vanilla red error on load (`Could not resolve reference … Thing_Human3550 … DirectPawnRelation`): the first half's
+      save had logged that a random world pawn's relation pointed at a pawn that wasn't deep-saved. Nothing to do with
+      the mod; D's rerun on a fresh world: 0 new errors.
