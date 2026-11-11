@@ -1,0 +1,6 @@
+# T7 Conversion: built WITHOUT Tidy Threads by tools/premod-builder (autotest.py run --premod).
+# Format: tools/premod-builder/Builder.cs. Two vanilla dressers (one Excellent, so it has art) and 15 loose shirts.
+site 10 7
+thing T7 Dresser WoodLog 2 5 South quality=Excellent hp=0.8
+thing T7 Dresser Steel 6 5 South hp=0.6
+items T7 Apparel_BasicShirt - 15 1 1 5

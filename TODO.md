@@ -21,15 +21,16 @@ prefix `TT_`, Harmony id `josh9817.tidythreads`. The plan's placeholders map lik
 - [x] **Phase 1**: Dresser becomes apparel storage
 - [x] **Phase 2**: Wardrobe without VFE
 - [x] **Phase 3**: Moving apparel into new dressers
-- [ ] **Phase 4**: Dressers from saves made before the mod
+- [x] **Phase 4**: Dressers from saves made before the mod
 - [ ] **Phase 5**: Wardrobe with VFE, and VFE added to or removed from a save
 - [ ] **Phase 6**: Release
 
 ## Current state
 
-- **Next step:** Phase 4 (pre-mod save harness, converter, T7, T12–T14). Hand-off: `docs/handoff/20261110-2336-phases-3-to-5.md`.
+- **Next step:** Phase 5 (VFE harness and baseline, T15–T17). Hand-off: `docs/handoff/20261110-2336-phases-3-to-5.md`.
 - **Open questions for the user:** none.
-- **Last run:** 2026-11-10 T12: 1/1 PASS, 0 new errors (`docs/test-runs.md`).
+- **Last run:** 2026-11-11 T7 rerun: 1/1 PASS, 0 new errors (`docs/test-runs.md`). The game reports `rev600` since
+  2026-11-11 (it was `rev598`).
 - **Environment (checked 2026-11-10):** game `1.6.4871 rev598`; Steam running; `dotnet`, `inkscape`, `Xvfb`, `xdotool`,
   `import` present. Workshop: Harmony (2009463077), ASF (3033901359) and VFE (1718190143) are installed;
   Dressers Hold Clothing (Continued) (2584894865) is not. `tools/vanilla.sh init` is done (`.tools/decomp`, 9213
@@ -111,7 +112,7 @@ and the installed ASF and VFE workshop folders (ASF ships its source under `Sour
 - Scenarios read ASF state by reflection (`Renderer.ShowContainedItems`) and the inspect string (`N / 20`), so the
   project has no compile-time ASF reference. Builds and installs in scenarios go through vanilla paths:
   `Blueprint.TryReplaceWithSolidThing` + `Frame.CompleteConstruction`, `MinifyUtility.Uninstall`, `PlaceBlueprintForInstall`.
-- Tool changes to port in Phase 6: `MOD_DEPS` in autotest.py/env.sh (+ preflight install check, selftest clears it),
+- Tool changes to port in Phase 6: `run --premod`/`--from-save` and `tools/premod-builder/` (+ selftest cases, fake game), the `AutoTest.LoadedSave`/`PreModManifest` game-side additions, `MOD_DEPS` in autotest.py/env.sh (+ preflight install check, selftest clears it),
   the env.sh `export` line, `rwdefs.py folders` and load-folder lint, `package.sh` load folders, and
   `export-textures.sh` no longer erroring when there is no `Art/About/`.
 - `TidyThreadsMod`'s constructor logs the build id and patches; `AutoTest.Init` runs from `TT`'s static constructor
@@ -202,25 +203,37 @@ and the installed ASF and VFE workshop folders (ASF ships its source under `Sour
 
 ## Phase 4: Dressers from saves made before the mod
 
-- [ ] Test harness: make a save without the mod and load it with the mod (decision 2), using a separate test-only
-      helper mod that builds the pre-mod fixture and saves (decision 6)
-- [ ] Converter, tried in plan order and stopping at the first that passes T7: Option 1 (ASF built-in; Verified
-      details predict a fail on settings); then Option 2 with Patch B only, redesigned to detect legacy dressers
-      without the null check; then Fallback C
-- [ ] **Prove T7 Conversion.** Without the mod: build 2 dressers (one Excellent with art), drop 15 apparel on the floor,
+- [x] Test harness: make a save without the mod and load it with the mod (decision 2), using a separate test-only
+      helper mod that builds the pre-mod fixture and saves (decision 6). `autotest.py run --premod SPEC` (builder:
+      `tools/premod-builder/`; specs: `Source/TidyThreads/PreMod/`) and `run --from-save NAME`; game side
+      `AutoTest.LoadedSave` and `AutoTest.PreModManifest()` (also in `tools/game-side/AutoTest.cs`). Selftest: 4 new
+      cases, all ok (2026-11-11, real instance stopped).
+- [x] Converter, tried in plan order and stopping at the first that passes T7: Option 1 failed T7 at step 2
+      (`Dresser9832 priority Normal, expected Critical`). Option 2, Patch B only, passed:
+      `LegacyDresserConverter` postfixes `Building_Storage.ExposeData`. It runs inside ASF's `base.ExposeData()`,
+      after vanilla's `Scribe_Deep` and before ASF's `settings ??= new(this)`, so a null `settings` there means the
+      saved node had none: the null check works at that point, not in PostLoadInit. Fallback C wasn't needed.
+- [x] **Prove T7 Conversion.** Without the mod: build 2 dressers (one Excellent with art), drop 15 apparel on the floor,
       save. Add the mod and load. Pass: the log shows the conversion message twice; both dressers have the Storage tab,
       Critical and Apparel; position, rotation, stuff, HP, quality and art title are unchanged; haulers move the 15
       items in. *Failure mode:* class not swapped, empty settings, or lost quality or art.
+      Proved by run build `000782e-dirty.20261111T000221Z` (1/1 PASS, 0 new errors; two "converted pre-mod Dresser"
+      lines; the Excellent dresser kept its art title).
 - [x] **Prove T12 Bedroom and comfort** (decisions 8, 9): fresh map; a fixture room with a bed, 2 dressers and a
       wardrobe is a Bedroom; one with only 2 dressers and a wardrobe is a Storeroom. *Failure mode:* a room's role is
       wrong because of the apparel furniture.
       Proved by run build `c1fd1e1-dirty.20261110T235343Z` (1/1 PASS, 0 new errors): two `f.Rooms(2, 7, 5, RoomPower.None)` rooms, roles
       `Bedroom` and `Storeroom`.
-- [ ] **Prove T13 Uninstall and deconstruct while full.** Uninstall one full dresser and deconstruct another. Pass: all
+- [x] **Prove T13 Uninstall and deconstruct while full.** Uninstall one full dresser and deconstruct another. Pass: all
       contents drop nearby, none are deleted, no errors. *Failure mode:* contents vanish (the 1.6 outfit stand bug).
-- [ ] **Prove T14 Save and reload.** Set one converted dresser to Normal, save, reload twice. Pass: contents identical;
+- [x] **Prove T14 Save and reload.** Set one converted dresser to Normal, save, reload twice. Pass: contents identical;
       that dresser stays Normal and the others stay Critical. *Failure mode:* the converter re-runs and overwrites a
       player's priority.
+- T13 and T14 proved by run build `000782e-dirty.20261111T000137Z` (2/2 PASS, 0 new errors) on their own pre-mod
+  save (`PreMod/T13-T14.txt`: 4 empty dressers, no loose items, so T7's haul doesn't leak in). T14 reloads twice
+  through `Scenario.SaveAndReload` and checks `LegacyDresserConverter.Converted` didn't grow.
+- The builder's vanilla quicktest map isn't the harness's flat fixture tile (that patch lives in the mod); its site
+  check uses `Walkable` like `Fixtures.Site`, since `Standable` rejected every forested site.
 
 ## Phase 5: Wardrobe with VFE, and VFE added to or removed from a save
 

@@ -4,6 +4,11 @@
   autotest.py run [filter]    one iteration: build, restart the instance in game (or start it), run the scenarios,
                               diff the log against the baseline, record the run. Exit 0 pass, 1 fail, 2 hang/crash,
                               3 not run (the environment is broken)
+      --from-save NAME        cold-launch the instance on Saves/NAME.rws (copied to autostart.rws, no quicktest)
+                              instead of a quicktest map; the game side reads the name from <ctl>/loaded-save
+      --premod SPEC           first build a save WITHOUT the mod: the test-only tools/premod-builder mod builds what
+                              SPEC describes on a quicktest map and saves it; then --from-save that save. Its manifest
+                              (what was built, for "before" checks) is copied to <ctl>/premod-manifest.txt
   autotest.py pkg-run [filter]
                               like run, but against the packaged copy in dist/<MOD_NAME> (MOD_PKG) without building:
                               the mod link temporarily points at the package, and the loaded assembly must report the
@@ -99,6 +104,16 @@ PROBE_MOD = DEVLOG / "removal-probe-mod"
 PROBE_LINK = RW_DIR / "Mods" / f"{MOD_NAME}RemovalProbe"
 PROBE_CTL = DEVLOG / "removal-probe"
 MOD_DEF_PREFIX = os.environ.get("MOD_DEF_PREFIX", "")  # the mod's defName prefix (removal probe content check)
+# run --premod: the test-only builder mod (tools/premod-builder), launched WITHOUT the mod, and the save it writes.
+PREMOD_ARG = "-modcenter-premod"
+PREMOD_ID = f"{MOD_SLUG}.premodbuilder"
+PREMOD_MOD = DEVLOG / "premod-builder-mod"
+PREMOD_LINK = RW_DIR / "Mods" / f"{MOD_NAME}PreModBuilder"
+PREMOD_CTL = DEVLOG / "premod"
+PREMOD_SAVE = f"{MOD_SLUG}_premod"
+# run --from-save: the save name the game side reads, and where --premod leaves the builder's manifest.
+LOADED_SAVE = CTL / "loaded-save"
+PREMOD_MANIFEST = CTL / "premod-manifest.txt"
 
 EXIT_PASS, EXIT_FAIL, EXIT_HANG, EXIT_NOT_RUN = 0, 1, 2, 3
 
@@ -317,11 +332,12 @@ def game_version():
         return "missing"
 
 
-def write_profile(with_mod, removal_probe=False):
+def write_profile(with_mod, removal_probe=False, premod=False):
     """Rewrites the test profile's config every launch, so the game can't drift from it."""
     config = RW_DATA / "Config"
     config.mkdir(parents=True, exist_ok=True)
-    mods = CORE_MODS + DEPS + ([PACKAGE_ID] + EXTRA_MODS if with_mod else []) + ([PROBE_ID] if removal_probe else [])
+    mods = (CORE_MODS + DEPS + ([PACKAGE_ID] + EXTRA_MODS if with_mod else []) + ([PROBE_ID] if removal_probe else [])
+            + ([PREMOD_ID] if premod else []))
     items = "\n".join(f"    <li>{m}</li>" for m in mods)
     (config / "ModsConfig.xml").write_text(
         '<?xml version="1.0" encoding="utf-8"?>\n<ModsConfigData>\n'
@@ -410,14 +426,24 @@ def archive_log(name):
     return target
 
 
-def launch(with_mod=True, removal_probe=False):
-    """Starts a fresh instance in its own session, so it outlives this script."""
-    write_profile(with_mod, removal_probe)
+def launch(with_mod=True, removal_probe=False, autostart=None, premod=False):
+    """Starts a fresh instance in its own session, so it outlives this script. With `autostart` (a save name) the
+    game loads that save instead of generating the quicktest map."""
+    write_profile(with_mod, removal_probe, premod)
+    auto = RW_DATA / "Saves" / "autostart.rws"
     if with_mod:
         ensure_mod_link()
-        # A leftover autostart save would load instead of the quicktest map (Root_Play checks it first). It is only
-        # ever written by the removal check, as a copy; remove it so a normal launch always quicktests.
-        (RW_DATA / "Saves" / "autostart.rws").unlink(missing_ok=True)
+        # A leftover autostart save would load instead of the quicktest map (Root_Entry checks it first). Only the
+        # removal check and --from-save write it, as a copy; remove it so a normal launch always quicktests.
+        auto.unlink(missing_ok=True)
+        LOADED_SAVE.unlink(missing_ok=True)
+        if autostart:
+            src = RW_DATA / "Saves" / f"{autostart}.rws"
+            if not src.is_file():
+                die(f"no save {src}")
+            shutil.copy2(src, auto)
+            CTL.mkdir(parents=True, exist_ok=True)
+            LOADED_SAVE.write_text(autostart + "\n")
     archive_log(f"orphan-{utc_stamp()}")
     CTL.mkdir(parents=True, exist_ok=True)
     EXTRA_MODS_FILE.write_text(",".join(EXTRA_MODS if with_mod else []))
@@ -431,7 +457,7 @@ def launch(with_mod=True, removal_probe=False):
         env["LP_NUM_THREADS"] = RENDER_THREADS
     argv = [str(EXE), f"-savedatafolder={RW_DATA}", "-logFile", str(RW_LOG), "-disable-compute-shaders"]
     # Root_Entry starts autoload itself. QuickStarter would also switch scenes, leaving a half-created Game.
-    if not removal_probe:
+    if not removal_probe and not autostart:
         argv.append("-quicktest")
     if with_mod:
         argv.append(f"{AUTOTEST_ARG}={CTL}")
@@ -439,18 +465,24 @@ def launch(with_mod=True, removal_probe=False):
             argv.append(f"{MAPSIZE_ARG}={MAP_SIZE}")
     if removal_probe:
         argv.append(f"{REMOVAL_PROBE_ARG}={PROBE_CTL}")
+    if premod:
+        argv.append(f"{PREMOD_ARG}={PREMOD_CTL}")
     proc = subprocess.Popen(argv, cwd=RW_DIR, env=env, stdin=subprocess.DEVNULL,
                             stdout=open(CTL / "stdout.log", "w"), stderr=subprocess.STDOUT, start_new_session=True)
     say(f"launched test instance pid {proc.pid} on {env['DISPLAY']}{'' if with_mod else ' (without the mod)'}")
     return proc.pid
 
 
-def start(timeout):
+def start(timeout, autostart=None):
     offset = events_size()
     t0 = time.time()
-    launch()
-    ready = wait_event(lambda e: e.get("ev") == "ready", offset, timeout, label="the quicktest map")
-    say(f"ready in {time.time() - t0:.0f} s: launch {ready['launch']}, build {ready['build']}")
+    launch(autostart=autostart)
+    ready = wait_event(lambda e: e.get("ev") == "ready", offset, timeout,
+                       label=f"the loaded save {autostart}" if autostart else "the quicktest map")
+    # Loaded once; an in-game restart (a new process) must quicktest again, not reload it.
+    (RW_DATA / "Saves" / "autostart.rws").unlink(missing_ok=True)
+    say(f"ready in {time.time() - t0:.0f} s: launch {ready['launch']}, build {ready['build']}"
+        + (f", loaded save {autostart}" if autostart else ""))
     return ready
 
 
@@ -459,6 +491,7 @@ def restart(cur, timeout):
     offset = events_size()
     t0 = time.time()
     archive_log(cur["launch"])
+    LOADED_SAVE.unlink(missing_ok=True)  # the restarted process quicktests
     try:
         send("restart")
         wait_event(lambda e: e.get("ev") == "restarting", offset, 30, launch=cur["launch"], hang_after=30,
@@ -569,6 +602,14 @@ def run_harness(expected_build, args, build_first):
             print("RESULT: BUILD FAILED")
             return EXIT_FAIL
     last = expected_build or (LAST_BUILD.read_text().strip() if LAST_BUILD.exists() else None)
+    autostart = getattr(args, "from_save", None)
+    if getattr(args, "premod", None):
+        if not build_premod_save(Path(args.premod), args):
+            print("RESULT: PREMOD FAILED")
+            return EXIT_FAIL
+        autostart = PREMOD_SAVE
+    if autostart:
+        kill_instance()
     cur = current()
     launched = EXTRA_MODS_FILE.read_text().strip() if EXTRA_MODS_FILE.exists() else ""
     if cur is not None and launched != ",".join(EXTRA_MODS):
@@ -577,7 +618,7 @@ def run_harness(expected_build, args, build_first):
         cur = None
     try:
         if cur is None:
-            cur, fresh = start(args.ready_timeout), True
+            cur, fresh = start(args.ready_timeout, autostart), True
         elif build_id(cur) != last:
             say(f"instance runs {build_id(cur)}, latest build is {last}: restarting in game")
             cur, fresh = restart(cur, args.ready_timeout), True
@@ -602,7 +643,73 @@ def run_harness(expected_build, args, build_first):
 
 def cmd_run(args):
     preflight()
+    if args.premod and args.from_save:
+        die("--premod and --from-save exclude each other")
+    if args.from_save and Path(args.from_save).name != args.from_save:
+        die("--from-save takes a save name, not a path")
     return run_harness(None, args, build_first=not args.no_build)
+
+
+def build_premod_save(spec, args):
+    """Builds PREMOD_SAVE in a launch without the mod: the builder mod spawns what `spec` describes and saves.
+    True when it saved, the mod wasn't loaded and the launch logged no new errors."""
+    if not spec.is_file():
+        die(f"no premod spec {spec}")
+    if PREMOD_LINK.exists() or PREMOD_LINK.is_symlink():
+        if not PREMOD_LINK.is_symlink() or PREMOD_LINK.resolve() != PREMOD_MOD:
+            die(f"refusing to replace unrelated premod-builder install {PREMOD_LINK}")
+    kill_instance()
+    assemblies = PREMOD_MOD / "1.6" / "Assemblies"
+    if subprocess.run(["dotnet", "build", str(REPO / "tools/premod-builder/PreModBuilder.csproj"), "-c", "Release",
+                       "-nologo", "-v", "quiet", "-o", str(assemblies)]).returncode:
+        return False
+    about = PREMOD_MOD / "About"
+    about.mkdir(parents=True, exist_ok=True)
+    (about / "About.xml").write_text(
+        f"<ModMetaData><name>{MOD_NAME} pre-mod save builder (test only)</name><author>{MOD_NAME} tools</author>"
+        f"<packageId>{PREMOD_ID}</packageId><supportedVersions><li>1.6</li></supportedVersions></ModMetaData>")
+    PREMOD_CTL.mkdir(parents=True, exist_ok=True)
+    for name in ("result", "heartbeat", "manifest.txt"):
+        (PREMOD_CTL / name).unlink(missing_ok=True)
+    shutil.copy2(spec, PREMOD_CTL / "spec.txt")
+    (PREMOD_CTL / "save-name").write_text(PREMOD_SAVE + "\n")
+    PREMOD_MANIFEST.unlink(missing_ok=True)
+    # A leftover autostart save would load instead of the quicktest map the builder needs.
+    (RW_DATA / "Saves" / "autostart.rws").unlink(missing_ok=True)
+    result, log = "", None
+    try:
+        if not PREMOD_LINK.is_symlink():
+            PREMOD_LINK.symlink_to(PREMOD_MOD)
+        launch(with_mod=False, premod=True)
+        t0 = time.time()
+        while not (PREMOD_CTL / "result").is_file():
+            time.sleep(0.5)
+            if not test_pids():
+                raise Outcome("CRASH", "the no-mod process exited")
+            if time.time() - t0 > args.ready_timeout:
+                raise Outcome("TIMEOUT", "the premod builder did not finish")
+            beat = PREMOD_CTL / "heartbeat"
+            if beat.is_file() and time.time() - beat.stat().st_mtime > args.hang_after:
+                raise Outcome("HANG", "the premod builder stopped beating")
+        result = (PREMOD_CTL / "result").read_text().strip()
+    except Outcome as o:
+        result = str(o)
+    finally:
+        kill_instance()
+        log = archive_log(f"premod-{utc_stamp()}")
+        PREMOD_LINK.unlink(missing_ok=True)
+        write_profile(with_mod=True)
+    text = log.read_text(errors="replace") if log else ""
+    errors = new_errors(log) if log else []
+    for b in errors:
+        print("\n".join(b.lines[:20]))
+    ok = result.startswith("PASS:") and not errors
+    if OURS in text:
+        result, ok = "invalid: the mod was loaded while building the pre-mod save", False
+    if ok:
+        shutil.copy2(PREMOD_CTL / "manifest.txt", PREMOD_MANIFEST)
+    say(f"premod: {result}; {len(errors)} new errors; log {log}")
+    return ok
 
 
 def cmd_pkg_run(args):
@@ -925,6 +1032,8 @@ def main():
     p = sub.add_parser("run")
     p.add_argument("filter", nargs="?", help="comma-separated, case-insensitive parts of scenario names")
     p.add_argument("--no-build", action="store_true")
+    p.add_argument("--from-save", metavar="NAME", help="cold-launch on Saves/NAME.rws instead of a quicktest map")
+    p.add_argument("--premod", metavar="SPEC", help="build a save without the mod from SPEC first, then load it")
     p.set_defaults(fn=cmd_run)
     p = sub.add_parser("pkg-run")
     p.add_argument("filter", nargs="?", help="comma-separated, case-insensitive parts of scenario names")

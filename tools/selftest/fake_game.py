@@ -5,7 +5,9 @@ game. Launched through ./RimWorldLinux with the real game's arguments.
   FAKE_FAIL=<name>       that scenario FAILs
 Without -modcenter-autotest (a baseline or removal-check launch) it idles; when a Saves/autostart.rws exists it
 logs the load line and, with FAKE_REMOVAL_ERRORS=1, the errors a removed mod leaves, or with FAKE_LOAD_FAIL=1 the
-"long event" exception of a failed load.
+"long event" exception of a failed load. With -modcenter-premod=<dir> (run --premod) it writes the save named in
+<dir>/save-name, a manifest and a PASS result, or FAIL with FAKE_PREMOD_FAIL=1. With the mod and an autostart save it
+logs the load line, and an error when -quicktest was passed as well (the two starts conflict).
 """
 import json
 import os
@@ -39,6 +41,16 @@ if not ctl_arg:
                      "Exception ticking FakeColonist: System.InvalidOperationException: DoBill on non-Billgiver.\n")
     text += "Exception in fake startup: NullReferenceException\n[Ref ABCD1234]\n  at Fake.Startup ()\n"
     log_path.write_text(text)
+    premod = next((a.split("=", 1)[1] for a in args if a.startswith("-modcenter-premod=")), None)
+    if premod:
+        directory = Path(premod)
+        name = (directory / "save-name").read_text().strip()
+        (data / "Saves").mkdir(parents=True, exist_ok=True)
+        (data / "Saves" / f"{name}.rws").write_text("fake pre-mod save")
+        (directory / "manifest.txt").write_text("T0\tThing1\tThing\t-\t1\t1\tSouth\t100\t-\t-\n")
+        (directory / "heartbeat").write_text("fake builder")
+        (directory / "result").write_text("FAIL: no site" if os.environ.get("FAKE_PREMOD_FAIL")
+                                          else f"PASS: built 1 things, saved {name}")
     probe = next((a.split("=", 1)[1] for a in args if a.startswith("-modcenter-removal-probe=")), None)
     if probe:
         directory = Path(probe)
@@ -73,6 +85,11 @@ def beat():
 
 log.write(f"Command line arguments: {' '.join(args)}\n")
 log.write(f"[{mod}] loaded build 0.1.0+{build}\n")
+auto = Path(next(a.split("=", 1)[1] for a in args if a.startswith("-savedatafolder="))) / "Saves" / "autostart.rws"
+if auto.exists():
+    log.write("Loading game from file autostart with mods:\n")
+    if "-quicktest" in args:
+        log.write("Exception from asynchronous event: System.NullReferenceException: quicktest and autostart\n")
 if os.environ.get("FAKE_STARTUP_ERROR"):
     log.write("Exception in fake startup: NullReferenceException\n[Ref ABCD1234]\n  at Fake.Startup ()\n")
 threading.Thread(target=beat, daemon=True).start()

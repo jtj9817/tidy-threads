@@ -27,7 +27,10 @@ namespace TidyThreads
             ("T10 Linking and capacity", T10LinkingAndCapacity),
             ("T11 Unreachable dresser", T11UnreachableDresser),
             // Phase 4: dressers from pre-mod saves, and the room role
+            ("T7 Conversion", T7Conversion),
             ("T12 Bedroom and comfort", T12BedroomAndComfort),
+            ("T13 Uninstall and deconstruct while full", T13UninstallAndDeconstructWhileFull),
+            ("T14 Save and reload", T14SaveAndReload),
         };
 
         private const string AsfThingClass = "AdaptiveStorage.ThingClass";

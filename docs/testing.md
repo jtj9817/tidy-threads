@@ -128,3 +128,13 @@ battle history, keep record IDs and wounds). `autotest.py removal-check` loads t
 **without** the mod's assembly plus an independent observer mod (`tools/removal-probe/`, which references
 nothing from the mod): 600 live ticks, save/reload, 600 more, retained vanilla contents, zero new errors —
 and the observer's own verdict can never turn a bad result good; new log errors still fail the check.
+
+**Adding the mod to an existing save** (the reverse of removal: a save made *before* the mod existed):
+`autotest.py run --premod SPEC "<names>"` first launches **without** the mod plus a test-only builder mod
+(`tools/premod-builder/`, which references nothing from the mod and never ships). It builds what the plain-text SPEC
+describes on the quicktest map (`site`, `thing` with quality/HP, `items`; format in `Builder.cs`), writes a manifest
+of what it spawned (ThingID, def, stuff, position, rotation, HP, quality, art title) and saves. The harness then
+cold-launches **with** the mod on that save (copied to `autostart.rws`, no `-quicktest`) and runs the named
+scenarios. The game side reads the save name from `AutoTest.LoadedSave` and the "before" facts from
+`AutoTest.PreModManifest()`; a scenario that needs the save fails at step 1 without it. The builder launch fails the
+run if it logged new errors or the mod was loaded. `run --from-save NAME` loads any named save the same way.

@@ -42,3 +42,6 @@ desktop.ini
 Source/**/bin/
 Source/**/obj/
 1.6/Assemblies/
+
+# Build output of tools/premod-builder/PreModBuilder.csproj (tools/autotest.py run --premod)
+tools/premod-builder/obj/

@@ -45,6 +45,23 @@ namespace Quadrunner
         /// <summary>The harness directory (<c>.devlog/autotest</c>), or null outside an automated run.</summary>
         public static string Dir => dir;
 
+        /// <summary>
+        /// The save this launch loaded instead of the quicktest map (<c>autotest.py run --from-save</c> or
+        /// <c>--premod</c>), or null. Read once at startup from <c>&lt;dir&gt;/loaded-save</c>.
+        /// </summary>
+        public static string LoadedSave { get; private set; }
+
+        /// <summary>
+        /// What the pre-mod builder spawned (<c>autotest.py run --premod</c>), one row of tab-separated columns per
+        /// thing: tag, ThingID, defName, stuff, x, z, rotation, hit points, quality, art title. Empty when absent.
+        /// </summary>
+        public static string[][] PreModManifest()
+        {
+            string path = dir == null ? null : Path.Combine(dir, "premod-manifest.txt");
+            return path == null || !File.Exists(path) ? new string[0][]
+                : File.ReadAllLines(path).Where(l => l.Length > 0).Select(l => l.Split('\t')).ToArray();
+        }
+
         public static bool MapReady =>
             Current.ProgramState == ProgramState.Playing && Find.CurrentMap != null && !LongEventHandler.ShouldWaitForEvent;
 
@@ -57,6 +74,8 @@ namespace Quadrunner
                 return;
             dir = value;
             Directory.CreateDirectory(dir);
+            string loaded = Path.Combine(dir, "loaded-save");
+            LoadedSave = File.Exists(loaded) ? File.ReadAllText(loaded).Trim() : null;
             QR.Log($"autotest: launch {LaunchId}, control dir {dir}");
             Event("launched", ("build", QR.BuildId));
         }

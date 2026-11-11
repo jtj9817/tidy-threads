@@ -74,6 +74,20 @@ expect 1 "REMOVAL FAILED" at removal-check
 unset FAKE_LOAD_FAIL
 [[ ! -e "$RW_DIR/Mods/${MOD_NAME}RemovalProbe" && ! -e "$MOD_DEVLOG/rwdata/Saves/autostart.rws" ]] \
   || { echo "FAIL  removal-check left a probe install or autostart save"; failures=$((failures + 1)); }
+# run --premod builds a save without the mod (builder mod linked only meanwhile), then cold-loads it with the mod;
+# --from-save loads a named save. Neither leaves an autostart save or the builder install behind.
+echo "site 1 1" > "$SELF/premod-spec.txt"
+expect 0 "loaded save ${MOD_NAME,,}_premod" at run --no-build --premod "$SELF/premod-spec.txt" smoke
+[[ -s "$MOD_DEVLOG/autotest/premod-manifest.txt" && ! -e "$MOD_DEVLOG/rwdata/Saves/autostart.rws" \
+   && ! -e "$RW_DIR/Mods/${MOD_NAME}PreModBuilder" && "$(cat "$MOD_DEVLOG/autotest/loaded-save")" == "${MOD_NAME,,}_premod" ]] \
+  || { echo "FAIL  run --premod left the wrong state behind"; failures=$((failures + 1)); }
+export FAKE_PREMOD_FAIL=1
+expect 1 "PREMOD FAILED" at run --no-build --premod "$SELF/premod-spec.txt" smoke
+unset FAKE_PREMOD_FAIL
+[[ ! -e "$MOD_DEVLOG/autotest/premod-manifest.txt" ]] \
+  || { echo "FAIL  a failed --premod kept a manifest"; failures=$((failures + 1)); }
+expect 0 "1/1 PASS, 0 new error(s)" at run --no-build --from-save "${MOD_NAME,,}_premod" smoke
+expect 3 "no save" at run --no-build --from-save no-such-save smoke
 expect 0 "stopped Xvfb" at stop
 # Fresh launch with a failing scenario and a startup error the baseline knows (hidden) ...
 export FAKE_FAIL="Save and reload" FAKE_STARTUP_ERROR=1
