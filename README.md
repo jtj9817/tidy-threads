@@ -5,6 +5,8 @@
 Dressers and wardrobes become apparel storage. Colonists put clothes away in them instead of leaving them on the
 floor or in the general stockpile.
 
+Source code: <https://github.com/jtj9817/tidy-threads>
+
 | Furniture | Holds | Size | Where it comes from |
 | --- | --- | --- | --- |
 | **Dresser** | 20 pieces of apparel (10 per cell) | 2×1 | Every vanilla dresser, including those already in your save |
@@ -47,9 +49,12 @@ read. Those come from VFE's own leftovers in the save and are harmless for the w
 
 ## Installing
 
-The mod isn't on the Steam Workshop. Copy the packaged `TidyThreads` folder (from `tools/package.sh`, in
-`dist/TidyThreads`) into the game's `Mods/` folder, enable Harmony, Adaptive Storage Framework and Tidy Threads in
-that order, and restart. Adding it to an existing save is safe.
+The mod isn't on the Steam Workshop. Get it from the [GitHub repository](https://github.com/jtj9817/tidy-threads):
+build it from source (see [Building](#building)), or download a packaged release from the
+[releases page](https://github.com/jtj9817/tidy-threads/releases) if one is available. Then copy the packaged
+`TidyThreads` folder (from `tools/package.sh`, in `dist/TidyThreads`) into the game's `Mods/` folder, enable
+Harmony, Adaptive Storage Framework and Tidy Threads in that order, and restart. Adding it to an existing save is
+safe.
 
 > [!WARNING]
 > **Removing Tidy Threads from a save is not supported.** The save stores dressers and wardrobes as storage, and
@@ -58,7 +63,8 @@ that order, and restart. Adding it to an existing save is safe.
 
 ## Building
 
-Needs the `dotnet` SDK (targets `net472` via `Krafs.Rimworld.Ref`), and Inkscape only to re-export textures.
+Clone the [repository](https://github.com/jtj9817/tidy-threads). Building needs the `dotnet` SDK (targets `net472` via
+`Krafs.Rimworld.Ref`), and Inkscape only to re-export textures.
 
 ```bash
 tools/build.sh             # lint the Defs, build 1.6/Assemblies/TidyThreads.dll
