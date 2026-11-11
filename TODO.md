@@ -27,8 +27,10 @@ prefix `TT_`, Harmony id `josh9817.tidythreads`. The plan's placeholders map lik
 
 ## Current state
 
-- **Next step:** Phase 6 (port the tool changes, README, release gate), when the user asks. T1–T17 are all proved.
-- **Open questions for the user:** none.
+- **Next step:** settle T11's gate failure (open question), then tick the release gate and Phase 6.
+- **Open questions for the user:** T11 failed in the release gate's sequence and passed alone (Phase 6). Should T11
+  end colonists' current jobs when it builds its fixture and log the job's def, then rerun the gate's launch A? Or
+  accept the solo PASS?
 - **Last run:** 2026-11-11 T15 rerun on the fresh none → VFE baseline: 1/1 PASS both halves (`docs/test-runs.md`). The game reports `rev600` since
   2026-11-11 (it was `rev598`).
 - **Environment (checked 2026-11-10):** game `1.6.4871 rev598`; Steam running; `dotnet`, `inkscape`, `Xvfb`, `xdotool`,
@@ -280,3 +282,7 @@ and the installed ASF and VFE workshop folders (ASF ships its source under `Sour
       dressers first), LICENSE, CHANGELOG
 - [ ] `tools/package.sh` produces a `dist/TidyThreads` that includes `LoadFolders.xml` and `NoVFE/`
 - [ ] Release gate (user-started or user-approved only): T1–T17 on the packaged copy via `tools/autotest.py pkg-run`
+      Run 2026-11-11 on package `2c3e271.20261111T012806Z` (approved with the Phase 6 request), six `pkg-run` launches
+      (quicktest VFE off; `--premod` T7; `--premod` T13–T14; `--switch-mods` none→VFE; VFE→none; VFE fresh): 16/17 PASS,
+      0 new errors. **T11 failed inside the gate sequence** (1 colonist job aimed at the walled-in dresser's cell, no item
+      moved; it ran right after T10) and **passed alone** on the same package. Open: how to settle it (question below).
