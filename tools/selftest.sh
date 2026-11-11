@@ -87,6 +87,10 @@ unset FAKE_PREMOD_FAIL
 [[ ! -e "$MOD_DEVLOG/autotest/premod-manifest.txt" ]] \
   || { echo "FAIL  a failed --premod kept a manifest"; failures=$((failures + 1)); }
 expect 0 "1/1 PASS, 0 new error(s)" at run --no-build --from-save "${MOD_NAME,,}_premod" smoke
+# pkg-run takes the same options: the package loads the pre-mod save, and the dev link comes back afterwards.
+expect 0 "loaded save ${MOD_NAME,,}_premod" at pkg-run --premod "$SELF/premod-spec.txt" smoke
+[[ "$(readlink -f "$RW_DIR/Mods/$MOD_NAME")" == "$REPO" && ! -e "$RW_DIR/Mods/${MOD_NAME}PreModBuilder" ]] \
+  || { echo "FAIL  pkg-run --premod left the package link or the builder install behind"; failures=$((failures + 1)); }
 expect 0 "1/1 PASS" at run --no-build --from-save "${MOD_NAME,,}_premod" smoke
 # A new build on an instance launched from a save (no -quicktest) restarts cold, never in game.
 echo "selftest.3" > "$MOD_DEVLOG/last-build"

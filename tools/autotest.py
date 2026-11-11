@@ -15,7 +15,8 @@
   autotest.py pkg-run [filter]
                               like run, but against the packaged copy in dist/<MOD_NAME> (MOD_PKG) without building:
                               the mod link temporarily points at the package, and the loaded assembly must report the
-                              package's BUILD stamp; the dev link is restored afterwards
+                              package's BUILD stamp; the dev link is restored afterwards. Takes run's --from-save,
+                              --premod and --switch-mods
   autotest.py removal-check   load the prepared removal save WITHOUT the mod, with an independent test-only observer.
                               Require 600 live ticks, a new save/reload, 600 more ticks, retained vanilla contents and
                               zero new errors. Never installs the observer into the release package.
@@ -693,14 +694,19 @@ def run_harness(expected_build, args, build_first):
 
 
 def cmd_run(args):
-    global EXTRA_MODS, SWITCHED_FROM
     preflight()
+    return run_variants(args, None, build_first=not args.no_build)
+
+
+def run_variants(args, expected_build, build_first):
+    """run_harness with the --from-save/--premod/--switch-mods options, shared by run and pkg-run."""
+    global EXTRA_MODS, SWITCHED_FROM
     if args.premod and args.from_save:
         die("--premod and --from-save exclude each other")
     if args.from_save and Path(args.from_save).name != args.from_save:
         die("--from-save takes a save name, not a path")
     if args.switch_mods is None:
-        return run_harness(None, args, build_first=not args.no_build)
+        return run_harness(expected_build, args, build_first)
     second = [m.strip() for m in args.switch_mods.split(",") if m.strip()]
     missing = sorted({m.lower() for m in second} - installed_package_ids())
     if missing:
@@ -708,7 +714,7 @@ def cmd_run(args):
     handover = RW_DATA / "Saves" / f"{HANDOVER_SAVE}.rws"
     handover.unlink(missing_ok=True)
     say(f"switch-mods, first half: extra mods [{','.join(EXTRA_MODS)}]")
-    code = run_harness(None, args, build_first=not args.no_build)
+    code = run_harness(expected_build, args, build_first)
     if code != EXIT_PASS:
         return code
     if not handover.is_file():
@@ -720,7 +726,7 @@ def cmd_run(args):
             "leftover-data errors will count (autotest.py baseline --switch-mods)")
     args.premod, args.from_save = None, HANDOVER_SAVE
     say(f"switch-mods, second half: extra mods [{','.join(EXTRA_MODS)}], loading {HANDOVER_SAVE}")
-    return run_harness(None, args, build_first=False)
+    return run_harness(expected_build, args, build_first=False)
 
 
 def build_premod_save(spec, args, extras=False):
@@ -814,7 +820,7 @@ def cmd_pkg_run(args):
         MOD_LINK.unlink(missing_ok=True)
         MOD_LINK.symlink_to(pkg)
         say(f"packaged run against {pkg}, expected build {stamp}; cold launch and modRoot checked")
-        return run_harness(stamp, args, build_first=False)
+        return run_variants(args, stamp, build_first=False)
     finally:
         cmd_stop(args)
         MOD_DIR = REPO
@@ -1137,6 +1143,9 @@ def main():
     p.set_defaults(fn=cmd_run)
     p = sub.add_parser("pkg-run")
     p.add_argument("filter", nargs="?", help="comma-separated, case-insensitive parts of scenario names")
+    p.add_argument("--from-save", metavar="NAME", help="as for run")
+    p.add_argument("--premod", metavar="SPEC", help="as for run (the builder launch never loads the package)")
+    p.add_argument("--switch-mods", metavar="MODS", help="as for run; both halves load the package")
     p.set_defaults(fn=cmd_pkg_run)
     p = sub.add_parser("removal-check")
     p.add_argument("--save", default=REMOVAL_SAVE, help="prepared save name (not a path)")

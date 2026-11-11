@@ -114,7 +114,7 @@ go before the subcommand (`autotest.py --timeout 3600 run`); run long jobs in th
 exit, don't poll.
 
 **Prove the harness itself**: `tools/selftest.sh` drives it against `fake_game.py` (a fake RimWorld speaking
-the same file protocol) through 30 cases — baseline, restart, filters, failures, error diffing, package runs,
+the same file protocol) through 31 cases — baseline, restart, filters, failures, error diffing, package runs,
 removal verdicts, the hang watchdog. Rerun it after changing `autotest.py` or the protocol, and stop the real
 instance first.
 
@@ -149,6 +149,9 @@ loaded under B, without the mod. It holds the errors that removing or adding tho
 component classes, def references), so the second half counts only what the mod adds. Without it those errors count,
 and the harness says so. An instance launched from a save never restarts in game (its command line has no
 `-quicktest`); a new build restarts it cold.
+
+`pkg-run` takes the same `--from-save`, `--premod` and `--switch-mods` options, so a release gate can run the
+scenarios that need a save or a mod switch against the package too.
 
 **Warnings the error pattern would miscount:** Player.log has no severity, so the harness matches error-like words.
 `VANILLA_WARNINGS` in `autotest.py` lists vanilla `Log.Warning` texts that match anyway, each with the decompiled
