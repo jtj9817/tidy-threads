@@ -27,14 +27,14 @@ prefix `TT_`, Harmony id `josh9817.tidythreads`. The plan's placeholders map lik
 
 ## Current state
 
-- **Next step:** none; every phase is done. The release package is `dist/TidyThreads`, build `7477b69.20261111T030637Z`.
+- **Next step:** none; every phase is done. The release package is `dist/TidyThreads`, build `e17101b.20261111T071643Z`. 1.0.0 was published on GitHub (tag `v1.0.0`, zip attached) on 2026-11-11.
 - **Open questions for the user:** none. T11, which failed in the first gate's sequence, passed in sequence right after
   T10 in the second gate (2026-11-11), so it was left unchanged. If it fails in sequence again, end colonists'
   current jobs in its fixture and log the job's def.
 - **[TT-001](docs/tickets/TT-001-apparel-lost-when-full-furniture-is-removed.md) fixed** (decisions 11, 12): dressers
   and wardrobes are emptied before deconstruction, uninstalling or destruction; T13 runs on a crowded site with three
   dressers and proves all three. The release gate reruns on a new package (user, 2026-11-11).
-- **Last run:** 2026-11-11 release gate on package `7477b69.20261111T030637Z`: 17/17 PASS, 0 new errors (`docs/test-runs.md`). The game reports `rev600` since
+- **Last run:** 2026-11-11 release gate on package `e17101b.20261111T071643Z`: 17/17 PASS, 0 new errors (`docs/test-runs.md`). The game reports `rev600` since
   2026-11-11 (it was `rev598`).
 - **Environment (checked 2026-11-10):** game `1.6.4871 rev598`; Steam running; `dotnet`, `inkscape`, `Xvfb`, `xdotool`,
   `import` present. Workshop: Harmony (2009463077), ASF (3033901359) and VFE (1718190143) are installed;
@@ -306,3 +306,8 @@ and the installed ASF and VFE workshop folders (ASF ships its source under `Sour
       vanilla red error on load (`Could not resolve reference … Thing_Human3550 … DirectPawnRelation`): the first half's
       save had logged that a random world pawn's relation pointed at a pawn that wasn't deep-saved. Nothing to do with
       the mod; D's rerun on a fresh world: 0 new errors.
+      **Rerun 2026-11-11 for the public 1.0.0 release** (user-approved) on package `e17101b.20261111T071643Z` (the TT-001
+      fix folded into 1.0.0), the same six launches: **17/17 PASS, 0 new errors.** The VFE launches used the extra-mod set
+      `OskarPotocki.VanillaFactionsExpanded.Core,VanillaExpanded.VFECore` to match the recorded baselines (the `VFE`
+      shorthand in the earlier rows is that set). 1.0.0 was tagged `v1.0.0` and published on GitHub with a zip of the
+      package.
