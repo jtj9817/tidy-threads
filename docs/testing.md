@@ -114,7 +114,7 @@ go before the subcommand (`autotest.py --timeout 3600 run`); run long jobs in th
 exit, don't poll.
 
 **Prove the harness itself**: `tools/selftest.sh` drives it against `fake_game.py` (a fake RimWorld speaking
-the same file protocol) through 19 cases — baseline, restart, filters, failures, error diffing, package runs,
+the same file protocol) through 30 cases — baseline, restart, filters, failures, error diffing, package runs,
 removal verdicts, the hang watchdog. Rerun it after changing `autotest.py` or the protocol, and stop the real
 instance first.
 

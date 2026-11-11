@@ -371,7 +371,7 @@ def write_profile(with_mod, removal_probe=False, premod=False, extras=None):
     mods = (CORE_MODS + DEPS + ([PACKAGE_ID] if with_mod else []) + (EXTRA_MODS if extras else [])
             + ([PROBE_ID] if removal_probe else []) + ([PREMOD_ID] if premod else []))
     # Lower-case, as the game itself saves them: ModsConfig keeps the ids as written and IsActive (and with it
-    # LoadFolders.xml IfModActive/IfModNotActive) looks them up lower-cased, so "VanillaExpanded.VFECore" never matched.
+    # LoadFolders.xml IfModActive/IfModNotActive) looks them up lower-cased, so a mixed-case id never matched.
     items = "\n".join(f"    <li>{m.lower()}</li>" for m in mods)
     (config / "ModsConfig.xml").write_text(
         '<?xml version="1.0" encoding="utf-8"?>\n<ModsConfigData>\n'

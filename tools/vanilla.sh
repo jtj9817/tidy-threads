@@ -23,7 +23,8 @@ decomp_current() { [[ -f "$DECOMP/.version" ]] && cmp -s "$DECOMP/.version" "$RW
 case "${1:-}" in
   init)
     if decomp_current; then echo "decomp is current ($(cat "$DECOMP/.version"))"; exit 0; fi
-    [[ -x "$ILSPY" ]] || dotnet tool install ilspycmd --tool-path "$LOCAL_TOOLS/ilspy"
+    # Pinned: ilspycmd 11.2+ needs GLIBC 2.38, newer than Ubuntu 22.04-based distros ship. MOD_ILSPY_VERSION overrides.
+    [[ -x "$ILSPY" ]] || dotnet tool install ilspycmd --version "${MOD_ILSPY_VERSION:-11.1.0.9782}" --tool-path "$LOCAL_TOOLS/ilspy"
     rm -rf "$DECOMP" && mkdir -p "$DECOMP"
     "$ILSPY" -p -o "$DECOMP" -r "$MANAGED" "$MANAGED/Assembly-CSharp.dll" > /dev/null
     cp "$RW_DIR/Version.txt" "$DECOMP/.version"

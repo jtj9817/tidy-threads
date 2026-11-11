@@ -273,8 +273,7 @@ evidence. Verify anything load-bearing against the decompiled source (`tools/van
 - Player.log has no severity, so "Could not ..." from `Log.Warning` looks like an error to a word-matching scanner
   (`Could not find think node with key`, `Verse.AI/Job.cs`, after a mod changes the think tree under a save). (TT)
 
-- `tools/export-textures.sh` with no arguments exits non-zero while `Art/About/` doesn't exist (its `find` fails under
-  `pipefail`); pass the SVG paths, or create `Art/About/`. SVGs live under `Art/Textures/…`. (CW)
+- SVGs live under `Art/Textures/…`; `tools/export-textures.sh` exports `Art/About/` last when it exists. (CW)
 
 - A fresh quicktest map has less than 70 days of history: subtracting retention can produce negative fixture ticks
   (Colony Web's `Recorder.Record` interprets any negative tick as “now”). Test an explicit future pruning cutoff,

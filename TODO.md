@@ -272,7 +272,10 @@ and the installed ASF and VFE workshop folders (ASF ships its source under `Sour
 
 ## Phase 6: Release
 
-- [ ] Port the general tool changes (harness, package, lint, `ilspycmd` pin) to `rimworld-modding-center` (decision 2)
+- [x] Port the general tool changes (harness, package, lint, `ilspycmd` pin) to `rimworld-modding-center` (decision 2):
+      modding center `44c47db`, selftest 30/30 ok there (2026-11-11). `vanilla.sh` now pins `ilspycmd` 11.1.0.9782
+      (`MOD_ILSPY_VERSION` overrides). The user's uncommitted `README.md` and `docs/wiki/` there were left alone.
+      Queen Bee and Quadrunner were not updated (their repos are off limits from here).
 - [ ] `About/Preview.png` (< 1 MB), README with the mod-removal warning (removal is unsupported per the plan: uninstall
       dressers first), LICENSE, CHANGELOG
 - [ ] `tools/package.sh` produces a `dist/TidyThreads` that includes `LoadFolders.xml` and `NoVFE/`
