@@ -5,6 +5,8 @@ each one covers (AGENTS.md § Testing scope). Raw logs are in `.devlog/runs/<lau
 
 | Date | Build | Scenarios (failure mode covered) | Result | Log showed | Next |
 | --- | --- | --- | --- | --- | --- |
+| 2026-11-11 | `ced5d8b-dirty.20261111T030505Z` | `--premod T13-T14.txt`: T13 Uninstall and deconstruct while full, now with a third dresser destroyed by `Kill` (contents vanish on uninstall, deconstruct or destruction) | 1/1 PASS, 0 new errors | `emptied 20 item(s) … before destruction, 19 beyond the nearby cells` | Commit, then the release gate |
+| 2026-11-11 | `ced5d8b-dirty.20261111T030409Z` | Same, destruction emptying switched off (does T13 catch the destroy case?) | 0/1 FAIL, 0 new errors | `17 neither spawned nor carried`: all from the killed dresser | Switch it back on |
 | 2026-11-11 | `ed76db8-dirty.20261111T025711Z` | T3 Minified and reinstalled (TT-001's `MakeMinified` prefix breaks an empty dresser's uninstall or reinstall) | 1/1 PASS, 0 new errors | — | Commit |
 | 2026-11-11 | `ed76db8-dirty.20261111T025636Z` | `--premod T13-T14.txt`: T14 Save and reload (its dressers moved to x 32/35 in the shared spec; converter overwrites a player's priority) | 1/1 PASS, 0 new errors | — | — |
 | 2026-11-11 | `ed76db8-dirty.20261111T025544Z` | `--premod T13-T14.txt`: T13 Uninstall and deconstruct while full, with the TT-001 fix (contents vanish when no cell is free nearby) | 1/1 PASS, 0 new errors | `emptied 20 item(s) … before uninstalling, 20 beyond the nearby cells`; `… before deconstruction, 19 beyond` | Rerun T14 and T3 |

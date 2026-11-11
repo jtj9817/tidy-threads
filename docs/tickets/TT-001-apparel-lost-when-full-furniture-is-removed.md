@@ -3,7 +3,7 @@
 | Field | Value |
 | --- | --- |
 | **Type** | Bug |
-| **Status** | Resolved (deconstruct and uninstall); destruction by fire, raids or roof collapse still open |
+| **Status** | Resolved |
 | **Priority** | High (silent item loss, no error logged) |
 | **Component** | Storage: dresser and wardrobe (`Patches/TT_Dresser.xml`, `Patches/TT_Wardrobe.xml`) |
 | **Affects** | 1.0.0 |
@@ -62,7 +62,7 @@ All of these go through `Building.DeSpawn`:
 - [x] Deconstruct (`DestroyMode.Deconstruct`): fixed
 - [x] Uninstall or reinstall: fixed (`MinifyUtility.MakeMinified` → ASF `ThingClass.Minify` → `DeSpawn`; ASF packs
       contents only when the `minifiedDef` has `MinifiedExtension packContents`, and vanilla `MinifiedThing` has none)
-- [ ] Destroyed by fire, explosion, a raid or a roof collapse (`DestroyMode.KillFinalize`): not covered, open question
+- [x] Destroyed by fire, explosion, a raid or a roof collapse (`DestroyMode.KillFinalize`): fixed (user, 2026-11-11)
 
 ## Likely situations
 
@@ -107,7 +107,7 @@ in it is removed first. The vanilla overflow drop then has nothing to move, so i
 - [x] Uninstalling (and so reinstalling) a dresser or wardrobe that holds apparel first empties it in the same way. (T13)
 - [x] Every removed item ends up spawned on the map or in a hauler's hands. (T13) If no cell on the whole map can take
       an item, it is put back on the furniture and a `[TidyThreads] ERROR` names it; vanilla's drop then handles it as
-      before. This needs a map with no free cell at all, so it isn't tested.
+      before. This needs a map with no free cell at all, which normal play never reaches, so it isn't tested (user, 2026-11-11).
 - [x] An empty dresser or wardrobe is deconstructed and uninstalled exactly as before. (T3)
 - [x] No new red errors from this mod, ASF or Harmony. (T13, T14, T3)
 
@@ -119,8 +119,8 @@ in it is removed first. The vanilla overflow drop then has nothing to move, so i
 - Hook point to choose: the deconstruct and uninstall paths (`Designator_Deconstruct`/`JobDriver_Deconstruct`,
   `Designator_Uninstall`/`JobDriver_Uninstall`, `MinifyUtility.MakeMinified`). Look up the exact vanilla methods
   with `tools/vanilla.sh grep`; don't rely on memory.
-- Destruction by fire, raids or roof collapse can't be emptied ahead of time. Ask the user whether those triggers
-  are in scope or stay a known vanilla limitation.
+- Destruction by fire, raids or roof collapse: in scope (user, 2026-11-11). `Destroy` runs before the despawn, so the
+  same prefix empties the furniture then.
 - Correct the README line "Uninstalling or deconstructing … Nothing is deleted" to match the behaviour that ships.
 
 ### Implementation
@@ -130,6 +130,7 @@ in it is removed first. The vanilla overflow drop then has nothing to move, so i
 | Patch | Covers |
 | --- | --- |
 | `Building_Storage.Destroy`, mode `Deconstruct` | `JobDriver_Deconstruct.FinishedRemoving`, god mode's `Designator_Deconstruct` |
+| `Building_Storage.Destroy`, modes `KillFinalize`, `KillFinalizeLeavingsOnly` | `Thing.Kill`: fire, raids, explosions, roof collapse |
 | `MinifyUtility.MakeMinified` | `MinifyUtility.Uninstall` (the uninstall job), `Toils_Construct.UninstallIfMinifiable` (reinstall), `GenSpawn.Refund` |
 
 For our furniture only (`ApparelStorageExtension`), and only while it is spawned, every item on its cells is taken off
@@ -146,6 +147,8 @@ log, and a probe shirt confirms that vanilla's Near search finds no spot. Run lo
 | --- | --- |
 | Without the fix | FAIL: 36 of 40 shirts neither spawned nor carried (18 per dresser) |
 | With the fix | T13 PASS, 0 new errors; T14 (moved fixture) and T3 (empty uninstall/reinstall) PASS |
+| Third dresser killed, destruction emptying off | FAIL: 17 shirts lost, all from the killed dresser |
+| Third dresser killed, full fix | T13 PASS: 60 shirts, 0 lost, 0 new errors |
 
 ## References
 

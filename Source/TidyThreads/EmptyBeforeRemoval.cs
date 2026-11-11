@@ -8,7 +8,8 @@ using Verse;
 namespace TidyThreads
 {
     /// <summary>
-    /// TT-001: empties a dresser or wardrobe before it is deconstructed or uninstalled (which reinstalling does too).
+    /// TT-001: empties a dresser or wardrobe before it is deconstructed, uninstalled (which reinstalling does too) or
+    /// destroyed (fire, raids, roof collapse: all <c>Thing.Kill</c>).
     /// Otherwise vanilla <c>Building.DeSpawn</c> drops the overflow itself: one item per cell stays, and each other item
     /// is taken off the map and put back with <c>GenPlace.TryPlaceThing(Near)</c>, whose result it ignores. With no free
     /// cell within 12.9 cells, that item is lost with no error. Emptied first, the furniture leaves nothing for it to drop.
@@ -66,14 +67,19 @@ namespace TidyThreads
         }
     }
 
-    /// <summary>Every deconstruction (the job, and god mode's instant one) ends in <c>Destroy(Deconstruct)</c>.</summary>
+    /// <summary>
+    /// Every deconstruction (the job, and god mode's instant one) ends in <c>Destroy(Deconstruct)</c>; every destruction
+    /// by damage (fire, raids, explosions, roof collapse) in <c>Thing.Kill</c> → <c>Destroy(KillFinalize)</c>.
+    /// </summary>
     [HarmonyPatch(typeof(Building_Storage), nameof(Building_Storage.Destroy))]
-    public static class EmptyBeforeDeconstruct
+    public static class EmptyBeforeDestroy
     {
         public static void Prefix(Building_Storage __instance, DestroyMode mode)
         {
             if (mode == DestroyMode.Deconstruct)
                 EmptyBeforeRemoval.Empty(__instance, "deconstruction");
+            else if (mode == DestroyMode.KillFinalize || mode == DestroyMode.KillFinalizeLeavingsOnly)
+                EmptyBeforeRemoval.Empty(__instance, "destruction");
         }
     }
 

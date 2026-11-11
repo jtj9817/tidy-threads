@@ -31,10 +31,9 @@ prefix `TT_`, Harmony id `josh9817.tidythreads`. The plan's placeholders map lik
 - **Open questions for the user:** T11 failed in the release gate's sequence and passed alone (Phase 6). Should T11
   end colonists' current jobs when it builds its fixture and log the job's def, then rerun the gate's launch A? Or
   accept the solo PASS?
-- **[TT-001](docs/tickets/TT-001-apparel-lost-when-full-furniture-is-removed.md) fixed** (decision 11): dressers and
-  wardrobes are emptied before deconstruction or uninstalling; T13 now runs on a crowded site and proves it. Still
-  open: should destruction by fire, raids or roof collapse be emptied too (not covered; it's vanilla's drop there)?
-  The fix comes after the release gate's package, so the gate needs a new package before Phase 6 can close.
+- **[TT-001](docs/tickets/TT-001-apparel-lost-when-full-furniture-is-removed.md) fixed** (decisions 11, 12): dressers
+  and wardrobes are emptied before deconstruction, uninstalling or destruction; T13 runs on a crowded site with three
+  dressers and proves all three. The release gate reruns on a new package (user, 2026-11-11).
 - **Last run:** 2026-11-11 TT-001: T13 (crowded), T14 and T3, each 1/1 PASS, 0 new errors (`docs/test-runs.md`). The game reports `rev600` since
   2026-11-11 (it was `rev598`).
 - **Environment (checked 2026-11-10):** game `1.6.4871 rev598`; Steam running; `dotnet`, `inkscape`, `Xvfb`, `xdotool`,
@@ -83,6 +82,9 @@ These settle the open questions raised by the verification. They are in the livi
     deconstructed or uninstalled (reinstalling uninstalls first), all its stored items are moved out. C# now has a
     second job: `EmptyBeforeRemoval.cs`, two Harmony prefixes (`Building_Storage.Destroy` in Deconstruct mode,
     `MinifyUtility.MakeMinified`). T13 runs on a crowded site that reproduces the loss (user approved the fixture change).
+12. **Destruction is emptied too; the last resort is accepted** (user, 2026-11-11): fire, raids and roof collapse
+    (`Destroy(KillFinalize)`) empty the furniture like deconstruction; T13 kills a third dresser to prove it. An item
+    with no free cell on the whole map isn't tested: that doesn't happen in normal play.
 
 ## Verified details (2026-11-10)
 

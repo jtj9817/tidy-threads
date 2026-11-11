@@ -2,8 +2,8 @@
 
 ## Unreleased
 
-- Fixed: deconstructing, uninstalling or reinstalling a full dresser or wardrobe could silently delete stored apparel
-  when no free cell was within about 13 tiles (TT-001). The furniture is now emptied first, falling back to the
+- Fixed: deconstructing, uninstalling, reinstalling or destroying (fire, raids, roof collapse) a full dresser or
+  wardrobe could silently delete stored apparel when no free cell was within about 13 tiles (TT-001). The furniture is now emptied first, falling back to the
   nearest free spot anywhere on the map.
 
 ## 1.0.0 (2026-11-11)

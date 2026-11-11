@@ -1,4 +1,4 @@
-<!-- Snapshot of the living design doc https://claude.ai/artifact/DmZxu6jsgd5qVrcYTtZhTz (rev 31, read 2026-11-11).
+<!-- Snapshot of the living design doc https://claude.ai/artifact/DmZxu6jsgd5qVrcYTtZhTz (rev 35, read 2026-11-11).
      The living doc is canonical: change it first, then refresh this snapshot. Placeholder names in it
      ("Closet Space", ClosetSpace, CS_, yourname.closetspace) map to Tidy Threads: TidyThreads, TT_, josh9817.tidythreads. -->
 
@@ -60,7 +60,7 @@ Ten decisions settle the open questions; where a section below differs, these wi
 | 8 | T12 checks the room role only, not comfort. Dressers and wardrobes are independent of beds: usually paired with them, but a storeroom may hold only dressers and wardrobes. | T12's comfort half |
 | 9 | T12 runs on a fresh map with fixture rooms: a room with a bed, 2 dressers and a wardrobe is a Bedroom, and a room with only 2 dressers and a wardrobe is a Storeroom. A converted dresser has the same class as a new one, so no pre-mod save is needed. | T12's setup "in the T7 save" |
 | 10 | VFE runs (T15–T17) use their own error baseline: Harmony + Core + ASF + VE Framework + VFE, without Tidy Threads. The harness picks the baseline that matches the launched mod set; this mod's own errors always count. | — |
-| 11 | Before a dresser or wardrobe is deconstructed or uninstalled (reinstalling uninstalls first), all its stored items are moved out (TT-001). Vanilla's own overflow drop ignores failed placements and silently loses items when no cell within 12.9 cells is free. This gives C# a second job; T13 runs on a crowded site that reproduces the loss. Destruction by fire, raids or roof collapse is not covered yet (open question). | User, 2026-11-10 |
+| 11 | Before a dresser or wardrobe is deconstructed or uninstalled (reinstalling uninstalls first), all its stored items are moved out (TT-001). Vanilla's own overflow drop ignores failed placements and silently loses items when no cell within 12.9 cells is free. This gives C# a second job; T13 runs on a crowded site that reproduces the loss. Destruction by fire, raids or roof collapse is emptied the same way (2026-11-11). | User, 2026-11-10 |
 
 Verified facts: the VFE wardrobe defName is `Table_Wardrobe` (size 2×1); packageIds are `brrainz.harmony`, `adaptive.storage.framework` and `VanillaExpanded.VFECore`. ASF already converts a saved `Building` to its class, so Patch A isn't needed; Patch B's null check can't work as written, because ASF sets `settings` during loading.
 
@@ -401,7 +401,7 @@ Other VE wardrobes (royal, illuminated) can get the same treatment later: wrap e
 
 ## C# implementation
 
-C# has two jobs: converting dressers that were already in a save before the mod was added, and emptying a dresser or wardrobe before it is deconstructed or uninstalled (decision 11). New dressers need no code; the XML patch covers them.
+C# has two jobs: converting dressers that were already in a save before the mod was added, and emptying a dresser or wardrobe before it is deconstructed, uninstalled or destroyed (decision 11). New dressers need no code; the XML patch covers them.
 
 ### Emptying before removal (TT-001)
 
@@ -411,7 +411,7 @@ When a storage building leaves the map, vanilla `Building.DeSpawn` keeps one ite
 
 | Harmony prefix | Why no vanilla hook works | Covers |
 | --- | --- | --- |
-| `Building_Storage.Destroy`, mode `Deconstruct` | `Building.DeSpawn` drops the overflow before any comp or virtual we own runs, and ASF seals `DeSpawn` | The deconstruct job, god mode's instant deconstruct |
+| `Building_Storage.Destroy`, mode `Deconstruct` | `Building.DeSpawn` drops the overflow before any comp or virtual we own runs, and ASF seals `DeSpawn` | The deconstruct job, god mode's instant deconstruct; modes `KillFinalize` and `KillFinalizeLeavingsOnly`: fire, raids, explosions, roof collapse (`Thing.Kill`) |
 | `MinifyUtility.MakeMinified` | Same; minifying despawns with `DestroyMode.Vanish`, so `Destroy` never sees it | Uninstall job, reinstall (`Toils_Construct.UninstallIfMinifiable`), `GenSpawn.Refund` |
 
 **Why existing dressers break.** A save file is like a packing list: each building is written as "an object of class *X*, using recipe *Dresser*". The XML patch changes the recipe, but old saves still say class *Building*, so on load the game rebuilds a plain building with storage settings it cannot use. The prior dresser mod avoided this by telling players to destroy dressers first; we instead correct the class name while the list is read.
@@ -654,7 +654,7 @@ Tests cover creating dressers and wardrobes, then moving apparel into them, incl
 |---|---|---|---|
 | T7 | Conversion | Without the mod: build 2 dressers (one Excellent with art), drop 15 apparel on the floor, save. Add the mod, load | Log shows the conversion message twice; both dressers have the Storage tab, Critical, Apparel; position, rotation, stuff, HP, quality and art title unchanged; haulers move the 15 items in |
 | T12 | Bedroom and comfort | Fresh map: a room with a bed, 2 dressers and a wardrobe; a room with only 2 dressers and a wardrobe (decisions 8, 9) | The first room is a Bedroom; the second is a Storeroom |
-| T13 | Uninstall and deconstruct while full | On a crowded site (every free cell within 13 cells holds a forbidden wood log), uninstall one full dresser, deconstruct another | Each dresser is emptied before removal; no item deleted; no errors |
+| T13 | Uninstall and deconstruct while full | On a crowded site (every free cell within 13 cells holds a forbidden wood log), uninstall one full dresser, deconstruct another, destroy a third | Each dresser is emptied before removal; no item deleted; no errors |
 | T14 | Save and reload | Set one converted dresser to Normal, save, reload twice | Contents identical; that dresser stays Normal; the others stay Critical |
 
 ### Wardrobe with and without VFE

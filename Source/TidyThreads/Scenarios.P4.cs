@@ -96,12 +96,13 @@ namespace TidyThreads
         }
 
         /// <summary>
-        /// T13. Precondition: the pre-mod save (PreMod/T13-T14.txt) loaded with the mod: 2 converted dressers tagged T13,
+        /// T13. Precondition: the pre-mod save (PreMod/T13-T14.txt) loaded with the mod: 3 converted dressers tagged T13,
         /// 20 shirts in each, and every free cell within 13 cells of them holding one forbidden wood log (vanilla's drop
         /// search reaches 12.9 cells, so it finds no spot for a shirt: a probe shirt proves that; the deconstructed
-        /// dresser's wood refund still stacks onto the logs). Trigger: one dresser is uninstalled and
-        /// the other deconstructed. Expected: all 40 shirts are still there, spawned or in a hauler's hands, and none on
-        /// its own dresser's old cells (the second dresser's shirts may land where the first stood), none destroyed, and the uninstalled dresser is a minified thing. Failure mode: contents vanish
+        /// dresser's wood refund still stacks onto the logs). Trigger: one dresser is uninstalled, one
+        /// deconstructed and one destroyed by damage (<c>Kill</c>, as fire, raids and roof collapse do). Expected: all 60
+        /// shirts are still there, spawned or in a hauler's hands, and none on
+        /// its own dresser's old cells (a later dresser's shirts may land where an earlier one stood), none destroyed, and the uninstalled dresser is a minified thing. Failure mode: contents vanish
         /// (TT-001: vanilla Building.DeSpawn drops the overflow and loses any item it can't place).
         /// </summary>
         private static void T13UninstallAndDeconstructWhileFull()
@@ -112,12 +113,12 @@ namespace TidyThreads
             var ownCells = new List<HashSet<IntVec3>>();
             var scenario = new Scenario("T13 Uninstall and deconstruct while full", 3000);
             scenario.Summary(() => problem)
-                .Do("2 converted dressers, 20 shirts in each, crowded all around", () =>
+                .Do("3 converted dressers, 20 shirts in each, crowded all around", () =>
                 {
                     problem = null;
                     dressers = PreMod("T13", "T13-T14.txt");
-                    if (dressers.Count != 2)
-                        throw new InvalidOperationException($"manifest: {dressers.Count} T13 dressers, expected 2");
+                    if (dressers.Count != 3)
+                        throw new InvalidOperationException($"manifest: {dressers.Count} T13 dressers, expected 3");
                     foreach (PreModThing d in dressers)
                     {
                         Thing dresser = Fixture.ById(d.id) ?? throw new InvalidOperationException($"dresser {d.id} is gone");
@@ -141,7 +142,7 @@ namespace TidyThreads
                         Thing log = GenSpawn.Spawn(scenario.Track(ThingMaker.MakeThing(ThingDefOf.WoodLog)), c, Map);
                         log.SetForbidden(true, warnOnFail: false);
                     }
-                    // Precondition: vanilla's own drop search finds nowhere for one more shirt next to either dresser.
+                    // Precondition: vanilla's own drop search finds nowhere for one more shirt next to any dresser.
                     foreach (IntVec3 center in dressers.Select(d => Fixture.ById(d.id).Position))
                     {
                         Thing probe = MakeApparel("Apparel_BasicShirt");
@@ -153,15 +154,16 @@ namespace TidyThreads
                         }
                     }
                 })
-                .Expect("both are converted and full", () => Ok(dressers.Select(d =>
+                .Expect("all 3 are converted and full", () => Ok(dressers.Select(d =>
                 {
                     Thing dresser = Fixture.ById(d.id);
                     return StorageProblem(dresser, 20) ?? (StoredItems(dresser).Count == 20 ? null : $"{dresser} holds {StoredItems(dresser).Count}");
                 }).FirstOrDefault(p => p != null)))
-                .Do("uninstall the first, deconstruct the second", () =>
+                .Do("uninstall the first, deconstruct the second, destroy the third", () =>
                 {
                     scenario.Track(Fixture.ById(dressers[0].id).Uninstall());
                     Fixture.ById(dressers[1].id).Destroy(DestroyMode.Deconstruct);
+                    Fixture.ById(dressers[2].id).Kill();
                 })
                 .Expect("every dresser was emptied and no shirt is lost", () => Ok(ShirtLoss(shirts, ownCells)))
                 .Wait(600)
