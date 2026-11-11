@@ -31,11 +31,11 @@ prefix `TT_`, Harmony id `josh9817.tidythreads`. The plan's placeholders map lik
 - **Open questions for the user:** T11 failed in the release gate's sequence and passed alone (Phase 6). Should T11
   end colonists' current jobs when it builds its fixture and log the job's def, then rerun the gate's launch A? Or
   accept the solo PASS?
-- **Open bug [TT-001](docs/tickets/TT-001-apparel-lost-when-full-furniture-is-removed.md):** vanilla
-  `Building.DeSpawn` can silently lose stored apparel when a full dresser or wardrobe is removed with no free cells
-  nearby. Resolution decided (user, 2026-11-10): empty the furniture before it is deconstructed or reinstalled. This
-  needs C# beyond the converter, so the "C# has one job" decision must be updated first.
-- **Last run:** 2026-11-11 T15 rerun on the fresh none → VFE baseline: 1/1 PASS both halves (`docs/test-runs.md`). The game reports `rev600` since
+- **[TT-001](docs/tickets/TT-001-apparel-lost-when-full-furniture-is-removed.md) fixed** (decision 11): dressers and
+  wardrobes are emptied before deconstruction or uninstalling; T13 now runs on a crowded site and proves it. Still
+  open: should destruction by fire, raids or roof collapse be emptied too (not covered; it's vanilla's drop there)?
+  The fix comes after the release gate's package, so the gate needs a new package before Phase 6 can close.
+- **Last run:** 2026-11-11 TT-001: T13 (crowded), T14 and T3, each 1/1 PASS, 0 new errors (`docs/test-runs.md`). The game reports `rev600` since
   2026-11-11 (it was `rev598`).
 - **Environment (checked 2026-11-10):** game `1.6.4871 rev598`; Steam running; `dotnet`, `inkscape`, `Xvfb`, `xdotool`,
   `import` present. Workshop: Harmony (2009463077), ASF (3033901359) and VFE (1718190143) are installed;
@@ -79,6 +79,10 @@ These settle the open questions raised by the verification. They are in the livi
    has the same class as a new one).
 10. **A separate error baseline for VFE runs** (user, 2026-11-10): Harmony + Core + ASF + VE Framework + VFE, no mod.
     The harness keeps one baseline file per extra-mod set and picks the one matching the launch.
+11. **Empty the furniture before it is removed** (user, 2026-11-10, TT-001): before a dresser or wardrobe is
+    deconstructed or uninstalled (reinstalling uninstalls first), all its stored items are moved out. C# now has a
+    second job: `EmptyBeforeRemoval.cs`, two Harmony prefixes (`Building_Storage.Destroy` in Deconstruct mode,
+    `MinifyUtility.MakeMinified`). T13 runs on a crowded site that reproduces the loss (user approved the fixture change).
 
 ## Verified details (2026-11-10)
 
@@ -238,6 +242,11 @@ and the installed ASF and VFE workshop folders (ASF ships its source under `Sour
 - T13 and T14 proved by run build `000782e-dirty.20261111T000137Z` (2/2 PASS, 0 new errors) on their own pre-mod
   save (`PreMod/T13-T14.txt`: 4 empty dressers, no loose items, so T7's haul doesn't leak in). T14 reloads twice
   through `Scenario.SaveAndReload` and checks `LegacyDresserConverter.Converted` didn't grow.
+- **TT-001 / T13 (2026-11-11):** T13 fills every free cell within 13 cells of its dressers with one forbidden wood log
+  and checks with a probe shirt that vanilla's Near search finds no spot. Steel filler made the deconstruct refund fail
+  too (`Failed to place all leavings`, a red error); wood logs take the refund as a stack. T14's dressers moved to
+  x 32/35 in `PreMod/T13-T14.txt`, since T13's probe found their empty cells. Unfixed build: 36 of 40 shirts lost. The overflow-drop gotcha added to `docs/gotchas.md` is general: port it
+  to the modding center.
 - The builder's vanilla quicktest map isn't the harness's flat fixture tile (that patch lives in the mod); its site
   check uses `Walkable` like `Fixtures.Site`, since `Standable` rejected every forested site.
 

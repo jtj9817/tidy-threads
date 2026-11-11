@@ -3,12 +3,12 @@
 | Field | Value |
 | --- | --- |
 | **Type** | Bug |
-| **Status** | Open |
+| **Status** | Resolved (deconstruct and uninstall); destruction by fire, raids or roof collapse still open |
 | **Priority** | High (silent item loss, no error logged) |
 | **Component** | Storage: dresser and wardrobe (`Patches/TT_Dresser.xml`, `Patches/TT_Wardrobe.xml`) |
 | **Affects** | 1.0.0 |
 | **Found by** | Code review of the storage mechanism (2026-11-10) |
-| **Test coverage** | None. T13 covers only an open site with free cells all around. |
+| **Test coverage** | T13, reworked to a crowded site (unfixed: 36 of 40 shirts lost; fixed: 0 lost) |
 
 ## Summary
 
@@ -59,10 +59,10 @@ Our furniture holds far more:
 
 All of these go through `Building.DeSpawn`:
 
-- [ ] Deconstruct (`DestroyMode.Deconstruct`)
-- [ ] Uninstall or reinstall (`MinifyUtility.MakeMinified` → ASF `ThingClass.Minify` → `DeSpawn`; ASF packs
+- [x] Deconstruct (`DestroyMode.Deconstruct`): fixed
+- [x] Uninstall or reinstall: fixed (`MinifyUtility.MakeMinified` → ASF `ThingClass.Minify` → `DeSpawn`; ASF packs
       contents only when the `minifiedDef` has `MinifiedExtension packContents`, and vanilla `MinifiedThing` has none)
-- [ ] Destroyed by fire, explosion, a raid or a roof collapse (`DestroyMode.KillFinalize`)
+- [ ] Destroyed by fire, explosion, a raid or a roof collapse (`DestroyMode.KillFinalize`): not covered, open question
 
 ## Likely situations
 
@@ -102,13 +102,14 @@ in it is removed first. The vanilla overflow drop then has nothing to move, so i
 
 ### Acceptance criteria
 
-- [ ] Deconstructing a dresser or wardrobe that holds apparel first empties it. No stored item is ever left
-      unspawned with no owner.
-- [ ] Uninstalling (and so reinstalling) a dresser or wardrobe that holds apparel first empties it in the same way.
-- [ ] Every removed item ends up spawned on the map or in a hauler's hands. If an item can't be placed, the code
-      reports that through the mod's `[TidyThreads]` log and keeps the item.
-- [ ] An empty dresser or wardrobe is deconstructed and uninstalled exactly as before.
-- [ ] No new red errors from this mod, ASF or Harmony.
+- [x] Deconstructing a dresser or wardrobe that holds apparel first empties it. No stored item is ever left
+      unspawned with no owner. (T13)
+- [x] Uninstalling (and so reinstalling) a dresser or wardrobe that holds apparel first empties it in the same way. (T13)
+- [x] Every removed item ends up spawned on the map or in a hauler's hands. (T13) If no cell on the whole map can take
+      an item, it is put back on the furniture and a `[TidyThreads] ERROR` names it; vanilla's drop then handles it as
+      before. This needs a map with no free cell at all, so it isn't tested.
+- [x] An empty dresser or wardrobe is deconstructed and uninstalled exactly as before. (T3)
+- [x] No new red errors from this mod, ASF or Harmony. (T13, T14, T3)
 
 ### Notes for the implementer
 
@@ -122,10 +123,29 @@ in it is removed first. The vanilla overflow drop then has nothing to move, so i
   are in scope or stay a known vanilla limitation.
 - Correct the README line "Uninstalling or deconstructing … Nothing is deleted" to match the behaviour that ships.
 
+### Implementation
+
+`Source/TidyThreads/EmptyBeforeRemoval.cs`, two Harmony prefixes that both call `EmptyBeforeRemoval.Empty`:
+
+| Patch | Covers |
+| --- | --- |
+| `Building_Storage.Destroy`, mode `Deconstruct` | `JobDriver_Deconstruct.FinishedRemoving`, god mode's `Designator_Deconstruct` |
+| `MinifyUtility.MakeMinified` | `MinifyUtility.Uninstall` (the uninstall job), `Toils_Construct.UninstallIfMinifiable` (reinstall), `GenSpawn.Refund` |
+
+For our furniture only (`ApparelStorageExtension`), and only while it is spawned, every item on its cells is taken off
+and placed with `GenPlace.TryPlaceThing(Near)`, never on the furniture's own cells. If that fails, the same search runs
+from grid points 18 cells apart over the whole map, nearest first, so every cell on the map is in reach. One
+`[TidyThreads]` dev-mode line reports how many items moved and how many needed the fallback.
+
 ### Verification
 
-Prove it with the plan's scenarios only (`AGENTS.md § Tracking and test rules`). T13 is the scenario for this failure
-mode, but its fixture has free space all around. Ask the user before changing T13's fixture to a crowded site.
+T13 was reworked with the user's approval: every free cell within 13 cells of its dressers holds one forbidden wood
+log, and a probe shirt confirms that vanilla's Near search finds no spot. Run log in `docs/test-runs.md` (2026-11-11):
+
+| Build | Result |
+| --- | --- |
+| Without the fix | FAIL: 36 of 40 shirts neither spawned nor carried (18 per dresser) |
+| With the fix | T13 PASS, 0 new errors; T14 (moved fixture) and T3 (empty uninstall/reinstall) PASS |
 
 ## References
 

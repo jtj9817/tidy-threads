@@ -173,6 +173,11 @@ evidence. Verify anything load-bearing against the decompiled source (`tools/van
 - `MakeMinified` despawns with `DestroyMode.Vanish` (never calls `Destroy`) — `DeSpawn` can't distinguish
   uninstall from destruction; put recall/refund in `DeSpawn`, destruction side effects in `Destroy`. A
   `MinifiedThing` ticks the inner building with no map — guard `Tick` with `Spawned`. (QB/QR)
+- A storage building with `maxItemsInCell` > 1 that leaves the map (deconstruct, minify, destruction) runs
+  `Building.DeSpawn`'s overflow drop: one item per cell stays, the rest are despawned and re-placed with
+  `GenPlace.TryPlaceThing(Near)`, whose `false` is ignored; with no usable cell within 12.9 cells the item is lost
+  silently. Empty the building first (Tidy Threads TT-001). A crowded test site also fails the deconstruct refund
+  (`Failed to place all leavings`, red): fill with the refund's own stuff so it stacks. (decomp)
 - `WorkGiver_DoBill` decides via `bill.ShouldDoNow()`; `RecipeWorker.AvailableOnNow` is UI-only; "Do until
   you have X" counts through `recipe.WorkerCounter`. `RecipeDef` has no per-bill class — gating one bill is a
   postfix on `Bill_Production.ShouldDoNow`. A no-product recipe must override `CanCountProducts`/

@@ -22,7 +22,8 @@ floor or in the general stockpile.
   only dressers and wardrobes counts as a storeroom.
 - **Existing saves.** Add the mod to a running colony: dressers already built are converted on load, keeping their
   position, rotation, material, hit points, quality and art, and start at Critical with the Apparel filter.
-- **Uninstalling or deconstructing** a full dresser or wardrobe drops its contents next to it. Nothing is deleted.
+- **Uninstalling or deconstructing** a dresser or wardrobe empties it first: its contents drop next to it, or at the
+  nearest free spot on the map when everything nearby is full. Nothing is deleted.
 
 ### Our wardrobe and Vanilla Furniture Expanded
 

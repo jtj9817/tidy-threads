@@ -43,8 +43,9 @@ From the plan unless noted; ask before changing any of them.
 - **Wardrobe:** our copy keeps VFE's defName (`Table_Wardrobe`), loads only through `LoadFolders.xml`
   `IfModNotActive="VanillaExpanded.VFECore"`, and is plain furniture. One always-loaded patch converts whichever
   wardrobe def exists. Never copy VFE Framework classes or comps.
-- **C# has one job:** converting dressers that were in a save before the mod was added. Try the options in order and
-  stop at the first that passes T7: ASF's built-in conversion, then Patch B (settings init), then Fallback C (respawn).
+- **C# has two jobs:** converting dressers that were in a save before the mod was added (tried in order, stopping at
+  the first that passes T7: ASF's built-in conversion, then Patch B (settings init), then Fallback C (respawn)); and,
+  since TT-001 (user, 2026-11-10), emptying a dresser or wardrobe before it is deconstructed or uninstalled.
 - **Removing the mod mid-save is unsupported:** the README says so and tells players to uninstall dressers first. There
   is no removal-prep scenario and no `removal-check`.
 - **User decisions (2026-11-10, details in TODO.md § Decisions):** root `Defs/`/`Patches/` with the shared tools

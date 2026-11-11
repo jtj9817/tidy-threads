@@ -1,7 +1,8 @@
 # T13 Uninstall and deconstruct while full, T14 Save and reload: built WITHOUT Tidy Threads by tools/premod-builder.
-# Four empty vanilla dressers, two per scenario; no loose items, so haulers leave them alone.
-site 14 4
+# Four empty vanilla dressers, two per scenario; no loose items, so haulers leave them alone. T14's pair sits over 25
+# cells from T13's, outside the 13-cell ring T13 crowds with steel, so T13 never touches T14's dressers.
+site 40 4
 thing T13 Dresser WoodLog 1 1 South
 thing T13 Dresser WoodLog 4 1 South
-thing T14 Dresser WoodLog 8 1 South
-thing T14 Dresser Steel 11 1 South
+thing T14 Dresser WoodLog 32 1 South
+thing T14 Dresser Steel 35 1 South

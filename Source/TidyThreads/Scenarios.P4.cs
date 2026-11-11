@@ -96,19 +96,23 @@ namespace TidyThreads
         }
 
         /// <summary>
-        /// T13. Precondition: the pre-mod save (PreMod/T13-T14.txt) loaded with the mod: 2 converted dressers tagged T13.
-        /// Trigger: each gets 20 shirts; one is uninstalled and the other deconstructed. Expected: all 40 shirts are
-        /// still there (on the ground nearby, or in a hauler's hands), none destroyed, and the uninstalled dresser is a
-        /// minified thing. Failure mode: contents vanish (the 1.6 outfit stand bug).
+        /// T13. Precondition: the pre-mod save (PreMod/T13-T14.txt) loaded with the mod: 2 converted dressers tagged T13,
+        /// 20 shirts in each, and every free cell within 13 cells of them holding one forbidden wood log (vanilla's drop
+        /// search reaches 12.9 cells, so it finds no spot for a shirt: a probe shirt proves that; the deconstructed
+        /// dresser's wood refund still stacks onto the logs). Trigger: one dresser is uninstalled and
+        /// the other deconstructed. Expected: all 40 shirts are still there, spawned or in a hauler's hands, and none on
+        /// its own dresser's old cells (the second dresser's shirts may land where the first stood), none destroyed, and the uninstalled dresser is a minified thing. Failure mode: contents vanish
+        /// (TT-001: vanilla Building.DeSpawn drops the overflow and loses any item it can't place).
         /// </summary>
         private static void T13UninstallAndDeconstructWhileFull()
         {
             List<PreModThing> dressers = null;
             var shirts = new List<Thing>();
-            var origins = new List<IntVec3>();
+            var footprints = new HashSet<IntVec3>();
+            var ownCells = new List<HashSet<IntVec3>>();
             var scenario = new Scenario("T13 Uninstall and deconstruct while full", 3000);
             scenario.Summary(() => problem)
-                .Do("2 converted dressers, 20 shirts in each", () =>
+                .Do("2 converted dressers, 20 shirts in each, crowded all around", () =>
                 {
                     problem = null;
                     dressers = PreMod("T13", "T13-T14.txt");
@@ -117,13 +121,35 @@ namespace TidyThreads
                     foreach (PreModThing d in dressers)
                     {
                         Thing dresser = Fixture.ById(d.id) ?? throw new InvalidOperationException($"dresser {d.id} is gone");
-                        origins.Add(dresser.Position);
                         List<IntVec3> cells = dresser.OccupiedRect().Cells.ToList();
+                        footprints.UnionWith(cells);
+                        ownCells.Add(new HashSet<IntVec3>(cells));
                         for (int i = 0; i < 20; i++)
                         {
                             Thing shirt = MakeApparel("Apparel_BasicShirt");
                             GenSpawn.Spawn(scenario.Track(shirt), cells[i % cells.Count], Map);
                             shirts.Add(shirt);
+                        }
+                    }
+                    // One forbidden wood log on every free cell within 13 cells: no spot for a shirt is left in
+                    // vanilla's reach, but the deconstruction refund (wood) can stack onto them instead of failing.
+                    var crowd = new HashSet<IntVec3>(footprints.SelectMany(c => GenRadial.RadialCellsAround(c, 13f, true)));
+                    foreach (IntVec3 c in crowd.Where(c => c.InBounds(Map) && !footprints.Contains(c)))
+                    {
+                        if (c.GetFirstItem(Map) != null || !GenSpawn.CanSpawnAt(ThingDefOf.WoodLog, c, Map))
+                            continue;
+                        Thing log = GenSpawn.Spawn(scenario.Track(ThingMaker.MakeThing(ThingDefOf.WoodLog)), c, Map);
+                        log.SetForbidden(true, warnOnFail: false);
+                    }
+                    // Precondition: vanilla's own drop search finds nowhere for one more shirt next to either dresser.
+                    foreach (IntVec3 center in dressers.Select(d => Fixture.ById(d.id).Position))
+                    {
+                        Thing probe = MakeApparel("Apparel_BasicShirt");
+                        if (GenPlace.TryPlaceThing(probe, center, Map, ThingPlaceMode.Near, null, c => !footprints.Contains(c)))
+                        {
+                            IntVec3 at = probe.Position;
+                            probe.Destroy();
+                            throw new InvalidOperationException($"fixture not crowded: a probe shirt found a spot at {at}");
                         }
                     }
                 })
@@ -137,21 +163,24 @@ namespace TidyThreads
                     scenario.Track(Fixture.ById(dressers[0].id).Uninstall());
                     Fixture.ById(dressers[1].id).Destroy(DestroyMode.Deconstruct);
                 })
-                .Expect("all 40 shirts lie near their dresser's spot", () =>
-                {
-                    int destroyed = shirts.Count(t => t.Destroyed);
-                    int far = shirts.Where(t => t.Spawned).Count(t => !shirts.IndexOf(t).Equals(-1)
-                        && !t.Position.InHorDistOf(origins[shirts.IndexOf(t) / 20], 8f));
-                    return Ok(destroyed == 0 && far == 0 ? null : $"{destroyed} destroyed, {far} more than 8 cells away");
-                })
+                .Expect("every dresser was emptied and no shirt is lost", () => Ok(ShirtLoss(shirts, ownCells)))
                 .Wait(600)
-                .Expect("none deleted after haulers had time", () =>
-                {
-                    int destroyed = shirts.Count(t => t.Destroyed);
-                    int lost = shirts.Count(t => !t.Destroyed && !t.Spawned && !(t.ParentHolder is Pawn_CarryTracker) && !(t.ParentHolder is Pawn_InventoryTracker));
-                    return Ok(destroyed == 0 && lost == 0 ? null : $"{destroyed} destroyed, {lost} neither spawned nor carried");
-                })
+                .Expect("none deleted after haulers had time", () => Ok(ShirtLoss(shirts, null)))
                 .Start();
+        }
+
+        /// <summary>
+        /// Null when every shirt exists, spawned or in a pawn's hands, and (when <paramref name="ownCells"/> is given) none
+        /// lies on its own dresser's old cells: shirt k came from dresser k / 20. Otherwise the counts.
+        /// </summary>
+        private static string ShirtLoss(List<Thing> shirts, List<HashSet<IntVec3>> ownCells)
+        {
+            int destroyed = shirts.Count(t => t.Destroyed);
+            int lost = shirts.Count(t => !t.Destroyed && !t.Spawned
+                && !(t.ParentHolder is Pawn_CarryTracker) && !(t.ParentHolder is Pawn_InventoryTracker));
+            int left = ownCells == null ? 0 : shirts.Where((t, k) => t.Spawned && ownCells[k / 20].Contains(t.Position)).Count();
+            return destroyed == 0 && lost == 0 && left == 0 ? null
+                : $"{destroyed} destroyed, {lost} neither spawned nor carried, {left} still on their own dresser's old cells";
         }
 
         /// <summary>
