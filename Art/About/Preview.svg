@@ -1,0 +1,127 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Mod preview, 640x360 (Steam rejects files over 1 MB). Embeds our exported wardrobe sprite, so
+     tools/export-textures.sh exports Art/About/ last. The dresser is drawn here, not copied from the game.
+     Text uses Fira Sans (installed system font). -->
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
+     width="640" height="360" viewBox="0 0 640 360">
+  <defs>
+    <radialGradient id="bg" cx="0.72" cy="0.55" r="0.85">
+      <stop offset="0" stop-color="#3a2c22"/>
+      <stop offset="0.6" stop-color="#211a16"/>
+      <stop offset="1" stop-color="#120e0c"/>
+    </radialGradient>
+    <!-- Linen weave, very faint. -->
+    <pattern id="weave" width="8" height="8" patternUnits="userSpaceOnUse">
+      <path d="M0,2 H8 M0,6 H8" stroke="#f3e2c4" stroke-width="1" opacity="0.035"/>
+      <path d="M2,0 V8 M6,0 V8" stroke="#f3e2c4" stroke-width="1" opacity="0.025"/>
+    </pattern>
+    <linearGradient id="title" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#fff6e6"/>
+      <stop offset="1" stop-color="#e6c79a"/>
+    </linearGradient>
+    <!-- The game tints our grayscale sprites with the stuff colour; this does the same with wood. -->
+    <filter id="wood" color-interpolation-filters="sRGB">
+      <feColorMatrix type="matrix" values="0.80 0 0 0 0  0.56 0 0 0 0  0.36 0 0 0 0  0 0 0 1 0"/>
+    </filter>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="150%">
+      <feGaussianBlur in="SourceAlpha" stdDeviation="5"/>
+      <feOffset dx="0" dy="8" result="s"/>
+      <feComponentTransfer><feFuncA type="linear" slope="0.55"/></feComponentTransfer>
+      <feMerge><feMergeNode/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <radialGradient id="floorGlow" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0" stop-color="#f0b46a" stop-opacity="0.22"/>
+      <stop offset="1" stop-color="#f0b46a" stop-opacity="0"/>
+    </radialGradient>
+    <!-- A folded shirt, front view. Fill set by the user. -->
+    <g id="fold">
+      <path d="M-22,-9 L-8,-14 Q0,-9 8,-14 L22,-9 L22,9 L-22,9 Z" stroke="#1b1410" stroke-width="2"
+            stroke-linejoin="round"/>
+      <path d="M-8,-14 L0,-4 L8,-14" fill="none" stroke="#1b1410" stroke-width="1.6" stroke-linejoin="round"/>
+      <path d="M-22,1 H22" stroke="#000" stroke-width="1.2" opacity="0.2"/>
+    </g>
+  </defs>
+
+  <rect width="640" height="360" fill="url(#bg)"/>
+  <rect width="640" height="360" fill="url(#weave)"/>
+  <!-- Stitched border: the "threads". -->
+  <rect x="12" y="12" width="616" height="336" rx="14" fill="none" stroke="#d8a25e" stroke-width="2.5"
+        stroke-dasharray="9 7" stroke-linecap="round" opacity="0.7"/>
+
+  <!-- Title block. -->
+  <g font-family="Fira Sans" fill="#f3e9d8">
+    <text x="40" y="100" font-size="52" font-weight="700" fill="url(#title)" letter-spacing="0.5">Tidy Threads</text>
+    <!-- A thread running under the title, ending in a needle. -->
+    <path d="M42,116 C110,128 170,104 238,116 S318,124 330,114" fill="none" stroke="#c9483e" stroke-width="3"
+          stroke-linecap="round"/>
+    <g transform="translate(330 114) rotate(-28)">
+      <path d="M0,-2.2 L34,-0.6 L38,0 L34,0.6 L0,2.2 Z" fill="#d9dde2" stroke="#6d7379" stroke-width="0.8"/>
+      <ellipse cx="5" cy="0" rx="3.2" ry="1" fill="#2a211b"/>
+    </g>
+    <text x="42" y="152" font-size="17" fill="#e9d9bf">Dressers and wardrobes store your apparel.</text>
+
+    <g font-size="17" fill="#f3e9d8">
+      <g transform="translate(46 196)">
+        <circle cx="6" cy="-6" r="5" fill="#d8a25e"/>
+        <text x="22" y="0"><tspan font-weight="700">Dresser</tspan> holds 20 pieces</text>
+      </g>
+      <g transform="translate(46 228)">
+        <circle cx="6" cy="-6" r="5" fill="#d8a25e"/>
+        <text x="22" y="0"><tspan font-weight="700">Wardrobe</tspan> holds 30 pieces</text>
+      </g>
+      <g transform="translate(46 260)">
+        <circle cx="6" cy="-6" r="5" fill="#d8a25e"/>
+        <text x="22" y="0">Apparel only, <tspan font-weight="700">Critical</tspan> by default</text>
+      </g>
+    </g>
+    <text x="42" y="318" font-size="13" fill="#b9a68b">RimWorld 1.6 · Harmony · Adaptive Storage Framework · no DLC</text>
+  </g>
+
+  <!-- The furniture. -->
+  <ellipse cx="496" cy="300" rx="150" ry="26" fill="url(#floorGlow)"/>
+
+  <!-- Wardrobe: our own sprite (2x1, drawn 2x2). -->
+  <g filter="url(#shadow)">
+    <image x="400" y="70" width="200" height="200" filter="url(#wood)"
+           xlink:href="../../NoVFE/Textures/TidyThreads/Furniture/Wardrobe_south.png"/>
+  </g>
+
+  <!-- Dresser, front, drawn for the preview in the sprites' grayscale style and tinted with wood. -->
+  <g transform="translate(366 196)" filter="url(#shadow)">
+    <g filter="url(#wood)">
+      <g stroke="#2e2e2e" stroke-width="4" stroke-linejoin="round">
+        <rect x="10" y="88" width="14" height="14" rx="2" fill="#a8a8a8"/>
+        <rect x="116" y="88" width="14" height="14" rx="2" fill="#a8a8a8"/>
+        <rect x="4" y="12" width="132" height="80" rx="3" fill="#d6d6d6"/>
+        <rect x="0" y="4" width="140" height="14" rx="3" fill="#ebebeb"/>
+      </g>
+      <g stroke="#454545" stroke-width="2.5" fill="#cacaca">
+        <rect x="14" y="26" width="112" height="18" rx="2"/>
+        <rect x="14" y="48" width="112" height="18" rx="2"/>
+        <rect x="14" y="70" width="112" height="16" rx="2"/>
+      </g>
+      <g fill="#6c6c6c" stroke="#2e2e2e" stroke-width="1.5">
+        <rect x="60" y="32" width="20" height="6" rx="3"/>
+        <rect x="60" y="54" width="20" height="6" rx="3"/>
+        <rect x="60" y="75" width="20" height="6" rx="3"/>
+      </g>
+    </g>
+    <!-- Folded apparel stacked on top. -->
+    <use xlink:href="#fold" x="44" y="-6" fill="#5e7fa3"/>
+    <use xlink:href="#fold" x="44" y="-22" fill="#c9483e"/>
+    <use xlink:href="#fold" x="96" y="-6" fill="#7c9a5e"/>
+    <use xlink:href="#fold" x="96" y="-22" fill="#e3d6bd"/>
+  </g>
+
+  <!-- Capacity badges. -->
+  <g font-family="Fira Sans" font-weight="700" text-anchor="middle">
+    <g transform="translate(578 86)">
+      <circle r="24" fill="#c9483e" stroke="#f3e9d8" stroke-width="2.5"/>
+      <text y="8" font-size="22" fill="#fff6e6">30</text>
+    </g>
+    <g transform="translate(358 218)">
+      <circle r="22" fill="#c9483e" stroke="#f3e9d8" stroke-width="2.5"/>
+      <text y="7" font-size="20" fill="#fff6e6">20</text>
+    </g>
+  </g>
+</svg>
