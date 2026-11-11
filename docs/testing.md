@@ -138,3 +138,19 @@ cold-launches **with** the mod on that save (copied to `autostart.rws`, no `-qui
 scenarios. The game side reads the save name from `AutoTest.LoadedSave` and the "before" facts from
 `AutoTest.PreModManifest()`; a scenario that needs the save fails at step 1 without it. The builder launch fails the
 run if it logged new errors or the mod was loaded. `run --from-save NAME` loads any named save the same way.
+
+**Changing another mod's presence under a save** (adding or removing a test-only extra mod such as VFE):
+`MOD_EXTRA_MODS=A autotest.py run --switch-mods B "<names>"` runs the scenarios under set A, where their first half
+writes `Saves/<slug>_handover.rws`, then cold-launches under set B on that save and runs them again; the second half
+knows itself by `AutoTest.LoadedSave`. PASS needs both halves. **Baselines follow the mod set:** each extra-mod set has
+its own `baseline-errors-<set>.txt` (`MOD_EXTRA_MODS=A autotest.py baseline`, recorded without the mod), and a switch
+has a transition baseline (`MOD_EXTRA_MODS=A autotest.py baseline --switch-mods B`): an empty save made under A,
+loaded under B, without the mod. It holds the errors that removing or adding those mods causes in any save (missing
+component classes, def references), so the second half counts only what the mod adds. Without it those errors count,
+and the harness says so. An instance launched from a save never restarts in game (its command line has no
+`-quicktest`); a new build restarts it cold.
+
+**Warnings the error pattern would miscount:** Player.log has no severity, so the harness matches error-like words.
+`VANILLA_WARNINGS` in `autotest.py` lists vanilla `Log.Warning` texts that match anyway, each with the decompiled
+source that shows it's a warning (`Could not find think node with key`: `Verse.AI/Job.cs`). Add one only after
+reading that source.

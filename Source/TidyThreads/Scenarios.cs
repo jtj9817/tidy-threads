@@ -31,6 +31,10 @@ namespace TidyThreads
             ("T12 Bedroom and comfort", T12BedroomAndComfort),
             ("T13 Uninstall and deconstruct while full", T13UninstallAndDeconstructWhileFull),
             ("T14 Save and reload", T14SaveAndReload),
+            // Phase 5: the wardrobe with VFE, and VFE added or removed
+            ("T15 Add VFE to a save", T15AddVfeToASave),
+            ("T16 Remove VFE from a save", T16RemoveVfeFromASave),
+            ("T17 Fresh game with VFE", T17FreshGameWithVfe),
         };
 
         private const string AsfThingClass = "AdaptiveStorage.ThingClass";

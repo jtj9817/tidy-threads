@@ -7,7 +7,8 @@ Without -modcenter-autotest (a baseline or removal-check launch) it idles; when 
 logs the load line and, with FAKE_REMOVAL_ERRORS=1, the errors a removed mod leaves, or with FAKE_LOAD_FAIL=1 the
 "long event" exception of a failed load. With -modcenter-premod=<dir> (run --premod) it writes the save named in
 <dir>/save-name, a manifest and a PASS result, or FAIL with FAKE_PREMOD_FAIL=1. With the mod and an autostart save it
-logs the load line, and an error when -quicktest was passed as well (the two starts conflict).
+logs the load line, and an error when -quicktest was passed as well (the two starts conflict). With FAKE_HANDOVER=1,
+each "run" also writes Saves/<mod>_handover.rws, as a scenario's first half does for run --switch-mods.
 """
 import json
 import os
@@ -116,6 +117,8 @@ while True:
             log.write(f"[{mod}] SCENARIO {name}: {verdict} in 300 ticks\n")
             event("scenario", name=name, verdict=verdict, detail=f"{verdict} in 300 ticks")
             verdicts.append(f"{name} {verdict}")
+        if os.environ.get("FAKE_HANDOVER"):
+            (auto.parent / f"{mod.lower()}_handover.rws").write_text("fake handover save")
         event("result", id=cid, passed=sum(v.endswith("PASS") for v in verdicts), total=len(verdicts), verdicts=verdicts)
     elif verb == "restart":
         # Like GenCommandLine.Restart: start a new process with the same command line, then quit.

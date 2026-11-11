@@ -11,6 +11,9 @@ namespace TidyThreads
     {
         private const string VfeCore = "VanillaExpanded.VFECore";
 
+        /// <summary>VFE is active, also when a duplicate local copy gives the workshop one a <c>_steam</c> postfix.</summary>
+        private static bool VfeActive => ModsConfig.ActiveModsInLoadOrder.Any(m => m.SamePackageId(VfeCore, ignorePostfix: true));
+
         /// <summary>
         /// T2. Precondition: VFE not active, a clear site. Trigger: wardrobes made in wood, steel, granite and wood, one in
         /// each rotation, then 30 shirts put in one. Expected: the wardrobe def is ours from NoVFE/; each is Critical apparel storage for 30 with our texture in its rotation; the full one holds 30 undrawn.
@@ -24,7 +27,7 @@ namespace TidyThreads
             scenario.Summary(() => problem)
                 .Expect("VFE is not active and the wardrobe is ours", () =>
                 {
-                    if (ModsConfig.IsActive(VfeCore))
+                    if (VfeActive)
                         return Ok("VFE is active: T2 needs it off");
                     ThingDef def = DefDatabase<ThingDef>.GetNamedSilentFail("Table_Wardrobe");
                     if (def == null)

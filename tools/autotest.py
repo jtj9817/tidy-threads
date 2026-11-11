@@ -9,6 +9,9 @@
       --premod SPEC           first build a save WITHOUT the mod: the test-only tools/premod-builder mod builds what
                               SPEC describes on a quicktest map and saves it; then --from-save that save. Its manifest
                               (what was built, for "before" checks) is copied to <ctl>/premod-manifest.txt
+      --switch-mods MODS      run the scenarios with MOD_EXTRA_MODS (they save Saves/<slug>_handover), then cold-launch
+                              with MODS as the extra mods instead ("" for none) on that save and run them again; PASS
+                              only if both halves pass. Each half diffs against its own mod set's baseline
   autotest.py pkg-run [filter]
                               like run, but against the packaged copy in dist/<MOD_NAME> (MOD_PKG) without building:
                               the mod link temporarily points at the package, and the loaded assembly must report the
@@ -75,7 +78,8 @@ HEARTBEAT = CTL / "heartbeat"
 EXTRA_MODS_FILE = CTL / "extra-mods"
 STATE = CTL / "state.json"
 RUNS = DEVLOG / "runs"
-BASELINE = DEVLOG / "baseline-errors.txt"
+# One error baseline per test-only extra-mod set: the extras bring their own noise (baseline_path()).
+BASELINE_DEFAULT = DEVLOG / "baseline-errors.txt"
 LAST_BUILD = DEVLOG / "last-build"
 
 PACKAGE_ID = MOD_ID
@@ -87,6 +91,30 @@ DEPS = [m.strip() for m in os.environ.get("MOD_DEPS", "").split(",") if m.strip(
 # Never a dependency of the mod; the scenarios that need one check ModsConfig.IsActive and skip themselves otherwise.
 # The launched set is recorded in EXTRA_MODS_FILE; a run with a different set restarts the instance cold.
 EXTRA_MODS = [m.strip() for m in os.environ.get("MOD_EXTRA_MODS", "").split(",") if m.strip()]
+
+
+# The extra-mod set a save was made with, when a run loads it under EXTRA_MODS (run --switch-mods, second half).
+SWITCHED_FROM = None
+
+
+def _slug(mods):
+    return re.sub(r'[^a-z0-9]+', '-', ','.join(mods).lower()).strip('-') or "none"
+
+
+def baseline_path(switched_from=None):
+    """The baseline for the current EXTRA_MODS: baseline-errors.txt without extras, else one file per set. With
+    `switched_from` (default SWITCHED_FROM), the transition baseline: a save made under that set, loaded under this one
+    (`baseline --switch-mods`), whose leftover-data errors any save shows, with or without the mod."""
+    switched_from = SWITCHED_FROM if switched_from is None else switched_from
+    if switched_from is not None:
+        transition = DEVLOG / f"baseline-errors-{_slug(switched_from)}--to--{_slug(EXTRA_MODS)}.txt"
+        if transition.exists():
+            return transition
+    if not EXTRA_MODS:
+        return BASELINE_DEFAULT
+    return DEVLOG / f"baseline-errors-{_slug(EXTRA_MODS)}.txt"
+
+
 # Launch arguments the game itself ignores and the mod's AutoTest.cs reads (see tools/game-side/AutoTest.cs).
 AUTOTEST_ARG = "-modcenter-autotest"
 MAPSIZE_ARG = "-modcenter-mapsize"
@@ -114,6 +142,8 @@ PREMOD_SAVE = f"{MOD_SLUG}_premod"
 # run --from-save: the save name the game side reads, and where --premod leaves the builder's manifest.
 LOADED_SAVE = CTL / "loaded-save"
 PREMOD_MANIFEST = CTL / "premod-manifest.txt"
+# run --switch-mods: the save a scenario's first half writes for its second half, loaded under the other mod set.
+HANDOVER_SAVE = f"{MOD_SLUG}_handover"
 
 EXIT_PASS, EXIT_FAIL, EXIT_HANG, EXIT_NOT_RUN = 0, 1, 2, 3
 
@@ -332,13 +362,17 @@ def game_version():
         return "missing"
 
 
-def write_profile(with_mod, removal_probe=False, premod=False):
-    """Rewrites the test profile's config every launch, so the game can't drift from it."""
+def write_profile(with_mod, removal_probe=False, premod=False, extras=None):
+    """Rewrites the test profile's config every launch, so the game can't drift from it. The extra mods load with the
+    mod, or without it when `extras` is true (a baseline for that mod set)."""
     config = RW_DATA / "Config"
     config.mkdir(parents=True, exist_ok=True)
-    mods = (CORE_MODS + DEPS + ([PACKAGE_ID] + EXTRA_MODS if with_mod else []) + ([PROBE_ID] if removal_probe else [])
-            + ([PREMOD_ID] if premod else []))
-    items = "\n".join(f"    <li>{m}</li>" for m in mods)
+    extras = with_mod if extras is None else extras
+    mods = (CORE_MODS + DEPS + ([PACKAGE_ID] if with_mod else []) + (EXTRA_MODS if extras else [])
+            + ([PROBE_ID] if removal_probe else []) + ([PREMOD_ID] if premod else []))
+    # Lower-case, as the game itself saves them: ModsConfig keeps the ids as written and IsActive (and with it
+    # LoadFolders.xml IfModActive/IfModNotActive) looks them up lower-cased, so "VanillaExpanded.VFECore" never matched.
+    items = "\n".join(f"    <li>{m.lower()}</li>" for m in mods)
     (config / "ModsConfig.xml").write_text(
         '<?xml version="1.0" encoding="utf-8"?>\n<ModsConfigData>\n'
         f"  <version>{game_version()}</version>\n  <activeMods>\n{items}\n  </activeMods>\n"
@@ -426,10 +460,10 @@ def archive_log(name):
     return target
 
 
-def launch(with_mod=True, removal_probe=False, autostart=None, premod=False):
+def launch(with_mod=True, removal_probe=False, autostart=None, premod=False, extras=None):
     """Starts a fresh instance in its own session, so it outlives this script. With `autostart` (a save name) the
     game loads that save instead of generating the quicktest map."""
-    write_profile(with_mod, removal_probe, premod)
+    write_profile(with_mod, removal_probe, premod, extras)
     auto = RW_DATA / "Saves" / "autostart.rws"
     if with_mod:
         ensure_mod_link()
@@ -437,11 +471,12 @@ def launch(with_mod=True, removal_probe=False, autostart=None, premod=False):
         # removal check and --from-save write it, as a copy; remove it so a normal launch always quicktests.
         auto.unlink(missing_ok=True)
         LOADED_SAVE.unlink(missing_ok=True)
-        if autostart:
-            src = RW_DATA / "Saves" / f"{autostart}.rws"
-            if not src.is_file():
-                die(f"no save {src}")
-            shutil.copy2(src, auto)
+    if autostart:
+        src = RW_DATA / "Saves" / f"{autostart}.rws"
+        if not src.is_file():
+            die(f"no save {src}")
+        shutil.copy2(src, auto)
+        if with_mod:
             CTL.mkdir(parents=True, exist_ok=True)
             LOADED_SAVE.write_text(autostart + "\n")
     archive_log(f"orphan-{utc_stamp()}")
@@ -523,12 +558,21 @@ def signature(line):
     return re.sub(r"[0-9]+", "N", re.sub(r"\[Ref [0-9A-F]+\]", "[Ref]", line))[:60]
 
 
+# Vanilla Log.Warning texts that ERROR_RE would count as errors (Player.log carries no severity). Each entry names the
+# decompiled source that shows it is a warning; add one only after reading that source.
+VANILLA_WARNINGS = (
+    "Could not find think node with key",  # Verse.AI/Job.cs: a saved job's think node is gone (a mod changed the tree)
+    "Object with load ID ",  # Verse/DebugLoadIDsSavingErrorsChecker.cs: "... is referenced ... but is not deep-saved"
+)
+
+
 class Block:
     def __init__(self, end, line):
         self.end, self.lines = end, [line]
         ours = OURS in line
         # Our own lines are messages unless QR.Error wrote them.
-        self.error = bool(ERROR_RE.search(line)) and "GL_" not in line and (not ours or f"{OURS} ERROR" in line)
+        self.error = (bool(ERROR_RE.search(line)) and "GL_" not in line and (not ours or f"{OURS} ERROR" in line)
+                      and not line.startswith(VANILLA_WARNINGS))
         self.ours = ours
 
     @property
@@ -583,7 +627,7 @@ def log_blocks(path, start=0):
 
 
 def known_signatures():
-    return set(BASELINE.read_text().splitlines()) if BASELINE.exists() else set()
+    return set(baseline_path().read_text().splitlines()) if baseline_path().exists() else set()
 
 
 def new_errors(path, start=0, show_all=False):
@@ -619,6 +663,13 @@ def run_harness(expected_build, args, build_first):
     try:
         if cur is None:
             cur, fresh = start(args.ready_timeout, autostart), True
+        elif build_id(cur) != last and LOADED_SAVE.exists():
+            # Launched from a save without -quicktest: an in-game restart reuses that command line and, with the
+            # autostart copy gone, stops at the main menu. Start cold instead.
+            say(f"instance runs {build_id(cur)}, latest build is {last}; it was launched from a save: restarting cold")
+            kill_instance()
+            archive_log(cur["launch"])
+            cur, fresh = start(args.ready_timeout), True
         elif build_id(cur) != last:
             say(f"instance runs {build_id(cur)}, latest build is {last}: restarting in game")
             cur, fresh = restart(cur, args.ready_timeout), True
@@ -642,15 +693,37 @@ def run_harness(expected_build, args, build_first):
 
 
 def cmd_run(args):
+    global EXTRA_MODS, SWITCHED_FROM
     preflight()
     if args.premod and args.from_save:
         die("--premod and --from-save exclude each other")
     if args.from_save and Path(args.from_save).name != args.from_save:
         die("--from-save takes a save name, not a path")
-    return run_harness(None, args, build_first=not args.no_build)
+    if args.switch_mods is None:
+        return run_harness(None, args, build_first=not args.no_build)
+    second = [m.strip() for m in args.switch_mods.split(",") if m.strip()]
+    missing = sorted({m.lower() for m in second} - installed_package_ids())
+    if missing:
+        die(f"not installed (workshop or Mods/): {', '.join(missing)}")
+    handover = RW_DATA / "Saves" / f"{HANDOVER_SAVE}.rws"
+    handover.unlink(missing_ok=True)
+    say(f"switch-mods, first half: extra mods [{','.join(EXTRA_MODS)}]")
+    code = run_harness(None, args, build_first=not args.no_build)
+    if code != EXIT_PASS:
+        return code
+    if not handover.is_file():
+        print(f"RESULT: FAIL: no handover save {handover}: the first half didn't write it")
+        return EXIT_FAIL
+    EXTRA_MODS, SWITCHED_FROM = second, EXTRA_MODS
+    if "--to--" not in baseline_path().name:
+        say(f"no transition baseline for [{','.join(SWITCHED_FROM)}] -> [{','.join(EXTRA_MODS)}]: "
+            "leftover-data errors will count (autotest.py baseline --switch-mods)")
+    args.premod, args.from_save = None, HANDOVER_SAVE
+    say(f"switch-mods, second half: extra mods [{','.join(EXTRA_MODS)}], loading {HANDOVER_SAVE}")
+    return run_harness(None, args, build_first=False)
 
 
-def build_premod_save(spec, args):
+def build_premod_save(spec, args, extras=False):
     """Builds PREMOD_SAVE in a launch without the mod: the builder mod spawns what `spec` describes and saves.
     True when it saved, the mod wasn't loaded and the launch logged no new errors."""
     if not spec.is_file():
@@ -680,7 +753,7 @@ def build_premod_save(spec, args):
     try:
         if not PREMOD_LINK.is_symlink():
             PREMOD_LINK.symlink_to(PREMOD_MOD)
-        launch(with_mod=False, premod=True)
+        launch(with_mod=False, premod=True, extras=extras)
         t0 = time.time()
         while not (PREMOD_CTL / "result").is_file():
             time.sleep(0.5)
@@ -843,7 +916,7 @@ def report(cur, result, offset, log_start, seconds, filt):
         print("\n".join(b.lines[:20]) + ("\n  ..." if len(b.lines) > 20 else ""))
     passed, total = result.get("passed", 0), result.get("total", 0)
     ok = total > 0 and passed == total and not errors
-    baseline = f"baseline {len(known_signatures())} signatures" if BASELINE.exists() else "NO BASELINE: every error counts"
+    baseline = f"baseline {len(known_signatures())} signatures" if baseline_path().exists() else "NO BASELINE: every error counts"
     verdict = "PASS" if ok else "FAIL"
     summary = (f"{passed}/{total} PASS, {len(errors)} new error(s) ({baseline})"
                + ("" if total else ", no scenario matched the filter"))
@@ -930,17 +1003,12 @@ def cmd_status(args):
     state = load_state()
     xvfb = state.get("display") if pid_alive(state.get("xvfb_pid")) else None
     print(f"xvfb           {xvfb or 'not running'}")
-    print(f"baseline       {len(known_signatures())} signatures" if BASELINE.exists() else "baseline       none")
+    print(f"baseline       {len(known_signatures())} signatures" if baseline_path().exists() else "baseline       none")
     return EXIT_PASS
 
 
-def cmd_baseline(args):
-    preflight()
-    if test_pids():
-        die("the test instance is running; autotest.py stop first")
-    t0 = time.time()
-    launch(with_mod=False)
-    # Without the mod nothing announces "map ready": wait until the log has been quiet for a while.
+def wait_quiet(args, t0):
+    """Without the mod nothing announces "map ready": wait until the log has been quiet for a while."""
     last_size, quiet_since = -1, time.time()
     while True:
         time.sleep(2)
@@ -955,13 +1023,44 @@ def cmd_baseline(args):
         if now - t0 > args.ready_timeout:
             say("log never went quiet; recording what there is")
             break
+
+
+def cmd_baseline(args):
+    """Error signatures without the mod, for the current extra-mod set; with --switch-mods MODS, for a save made
+    under the current set and loaded under MODS (the transition's own leftover-data errors)."""
+    global EXTRA_MODS, SWITCHED_FROM
+    preflight()
+    if test_pids():
+        die("the test instance is running; autotest.py stop first")
+    t0 = time.time()
+    if args.switch_mods is not None:
+        spec = CTL / "empty-premod-spec.txt"
+        spec.write_text("# an empty colony: only the transition's own errors\nsite 1 1\n")
+        if not build_premod_save(spec, args, extras=True):
+            die("could not build the save for the transition baseline", EXIT_FAIL)
+        EXTRA_MODS, SWITCHED_FROM = [m.strip() for m in args.switch_mods.split(",") if m.strip()], EXTRA_MODS
+        missing = sorted({m.lower() for m in EXTRA_MODS} - installed_package_ids())
+        if missing:
+            die(f"not installed (workshop or Mods/): {', '.join(missing)}")
+        launch(with_mod=False, autostart=PREMOD_SAVE, extras=True)
+    else:
+        launch(with_mod=False, extras=True)
+    wait_quiet(args, t0)
     kill_instance()
+    (RW_DATA / "Saves" / "autostart.rws").unlink(missing_ok=True)
     log = archive_log(f"baseline-{utc_stamp()}")
-    if OURS in log.read_text(errors="replace"):
+    text = log.read_text(errors="replace")
+    if OURS in text:
         die(f"{log} contains {OURS}; the baseline must come from a run without the mod")
+    if SWITCHED_FROM is not None and LOAD_MARKER not in text:
+        die(f"{log} never loaded the transition save", EXIT_FAIL)
     sigs = sorted({b.sig for b in log_blocks(log) if b.error})
-    BASELINE.write_text("".join(s + "\n" for s in sigs))
-    print(f"baseline: {len(sigs)} error signatures from {log} ({time.time() - t0:.0f} s) -> {BASELINE}")
+    target = (DEVLOG / f"baseline-errors-{_slug(SWITCHED_FROM)}--to--{_slug(EXTRA_MODS)}.txt"
+              if SWITCHED_FROM is not None else baseline_path())
+    target.write_text("".join(s + "\n" for s in sigs))
+    print(f"baseline: {len(sigs)} error signatures from {log} ({time.time() - t0:.0f} s) -> {target}"
+          + (f" (extra mods: {', '.join(EXTRA_MODS)})" if EXTRA_MODS else "")
+          + (f" (save made with: {', '.join(SWITCHED_FROM) or 'none'})" if SWITCHED_FROM is not None else ""))
     write_profile(with_mod=True)
     return EXIT_PASS
 
@@ -970,7 +1069,7 @@ def cmd_errors(args):
     path = Path(args.log) if args.log else RW_LOG
     if not path.exists():
         die(f"no log at {path}")
-    if not BASELINE.exists() and not args.all:
+    if not baseline_path().exists() and not args.all:
         say("no baseline yet, showing every error")
     blocks = new_errors(path, show_all=args.all)
     for b in blocks:
@@ -1034,6 +1133,7 @@ def main():
     p.add_argument("--no-build", action="store_true")
     p.add_argument("--from-save", metavar="NAME", help="cold-launch on Saves/NAME.rws instead of a quicktest map")
     p.add_argument("--premod", metavar="SPEC", help="build a save without the mod from SPEC first, then load it")
+    p.add_argument("--switch-mods", metavar="MODS", help="rerun on the handover save with these extra mods instead")
     p.set_defaults(fn=cmd_run)
     p = sub.add_parser("pkg-run")
     p.add_argument("filter", nargs="?", help="comma-separated, case-insensitive parts of scenario names")
@@ -1047,6 +1147,7 @@ def main():
     p = sub.add_parser("baseline")
     p.add_argument("--min-seconds", type=int, default=120, help="never stop before this many seconds")
     p.add_argument("--quiet-seconds", type=int, default=30, help="stop once the log was quiet this long")
+    p.add_argument("--switch-mods", metavar="MODS", help="record a save made with MOD_EXTRA_MODS, loaded with MODS")
     p.set_defaults(fn=cmd_baseline)
     p = sub.add_parser("errors")
     p.add_argument("log", nargs="?")

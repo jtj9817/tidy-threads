@@ -55,6 +55,11 @@ evidence. Verify anything load-bearing against the decompiled source (`tools/van
 
 ## Saves and persistence
 
+- A save made before a storage mod existed loads its dressers through ASF's class swap with **no `settings` node**,
+  and ASF then fills `settings ??= new(this)` (empty filter, Normal). Detect it in a postfix on vanilla
+  `Building_Storage.ExposeData`: that runs inside ASF's `base.ExposeData()`, after `Scribe_Deep` left `settings`
+  null and before ASF's fallback. A PostLoadInit null check never fires. (TT)
+
 - Keep persistent state on Things/buildings/comps (`Scribe_Collections/References/Values/TargetInfo`);
   avoid `MapComponent`/`GameComponent` (a `GameComponent` is instantiated into every game and saved — it
   also breaks clean removal; static per-map caches rebuilt from saved objects leave no residue). (QB/QR)
@@ -261,6 +266,12 @@ evidence. Verify anything load-bearing against the decompiled source (`tools/van
 - `AccessTools.FieldRefAccess` reaches private state (e.g. reset `AutoUndrafter` per frame). (QR)
 
 ## Engine misc, performance, tooling quirks
+
+- `ModsConfig.IsActive` looks up the id lower-cased, but the game keeps `ModsConfig.xml` ids **as written**. A
+  hand-written config with `VanillaExpanded.VFECore` makes `IsActive` and `LoadFolders.xml` `IfModNotActive` miss
+  a mod that loaded fine. The game always saves lower-case; a test harness must write lower-case too. (TT)
+- Player.log has no severity, so "Could not ..." from `Log.Warning` looks like an error to a word-matching scanner
+  (`Could not find think node with key`, `Verse.AI/Job.cs`, after a mod changes the think tree under a save). (TT)
 
 - `tools/export-textures.sh` with no arguments exits non-zero while `Art/About/` doesn't exist (its `find` fails under
   `pipefail`); pass the SVG paths, or create `Art/About/`. SVGs live under `Art/Textures/…`. (CW)

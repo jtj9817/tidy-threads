@@ -22,14 +22,14 @@ prefix `TT_`, Harmony id `josh9817.tidythreads`. The plan's placeholders map lik
 - [x] **Phase 2**: Wardrobe without VFE
 - [x] **Phase 3**: Moving apparel into new dressers
 - [x] **Phase 4**: Dressers from saves made before the mod
-- [ ] **Phase 5**: Wardrobe with VFE, and VFE added to or removed from a save
+- [x] **Phase 5**: Wardrobe with VFE, and VFE added to or removed from a save
 - [ ] **Phase 6**: Release
 
 ## Current state
 
-- **Next step:** Phase 5 (VFE harness and baseline, T15–T17). Hand-off: `docs/handoff/20261110-2336-phases-3-to-5.md`.
+- **Next step:** Phase 6 (port the tool changes, README, release gate), when the user asks. T1–T17 are all proved.
 - **Open questions for the user:** none.
-- **Last run:** 2026-11-11 T7 rerun: 1/1 PASS, 0 new errors (`docs/test-runs.md`). The game reports `rev600` since
+- **Last run:** 2026-11-11 T15 rerun on the fresh none → VFE baseline: 1/1 PASS both halves (`docs/test-runs.md`). The game reports `rev600` since
   2026-11-11 (it was `rev598`).
 - **Environment (checked 2026-11-10):** game `1.6.4871 rev598`; Steam running; `dotnet`, `inkscape`, `Xvfb`, `xdotool`,
   `import` present. Workshop: Harmony (2009463077), ASF (3033901359) and VFE (1718190143) are installed;
@@ -112,7 +112,7 @@ and the installed ASF and VFE workshop folders (ASF ships its source under `Sour
 - Scenarios read ASF state by reflection (`Renderer.ShowContainedItems`) and the inspect string (`N / 20`), so the
   project has no compile-time ASF reference. Builds and installs in scenarios go through vanilla paths:
   `Blueprint.TryReplaceWithSolidThing` + `Frame.CompleteConstruction`, `MinifyUtility.Uninstall`, `PlaceBlueprintForInstall`.
-- Tool changes to port in Phase 6: `run --premod`/`--from-save` and `tools/premod-builder/` (+ selftest cases, fake game), the `AutoTest.LoadedSave`/`PreModManifest` game-side additions, `MOD_DEPS` in autotest.py/env.sh (+ preflight install check, selftest clears it),
+- Tool changes to port in Phase 6: `run --switch-mods`, per-set and transition baselines (`baseline --switch-mods`), lower-cased `ModsConfig.xml` ids, `VANILLA_WARNINGS`, cold restart of save-launched instances, `run --premod`/`--from-save` and `tools/premod-builder/` (+ selftest cases, fake game), the `AutoTest.LoadedSave`/`PreModManifest` game-side additions, `MOD_DEPS` in autotest.py/env.sh (+ preflight install check, selftest clears it),
   the env.sh `export` line, `rwdefs.py folders` and load-folder lint, `package.sh` load folders, and
   `export-textures.sh` no longer erroring when there is no `Art/About/`.
 - `TidyThreadsMod`'s constructor logs the build id and patches; `AutoTest.Init` runs from `TT`'s static constructor
@@ -237,18 +237,38 @@ and the installed ASF and VFE workshop folders (ASF ships its source under `Sour
 
 ## Phase 5: Wardrobe with VFE, and VFE added to or removed from a save
 
-- [ ] Test harness: VFE as a test-only extra mod (`MOD_EXTRA_MODS=VanillaExpanded.VFECore`), and a save made with one mod
-      set loaded with another (decision 2)
-- [ ] Check VFE's def is still plain furniture at build time; if it already is storage, step 3 becomes Replace
-- [ ] **Prove T15 Add VFE to a save.** VFE off: build 2 wardrobes, fill with 30 apparel each, set one to Normal, save.
+- [x] Test harness: VFE as a test-only extra mod (`MOD_EXTRA_MODS=VanillaExpanded.VFECore`), and a save made with one mod
+      set loaded with another (decision 2). VFE needs VE Framework, so
+      `MOD_EXTRA_MODS=OskarPotocki.VanillaFactionsExpanded.Core,VanillaExpanded.VFECore`. `run --switch-mods MODS`
+      runs a scenario's first half (it saves `tidythreads_handover`), then cold-loads that save under MODS for the
+      second half. Baselines per extra-mod set (decision 10) and per transition (`baseline --switch-mods`: an empty
+      save made under one set, loaded under the other, without the mod). Selftest: 4 more cases, all ok.
+- [x] Check VFE's def is still plain furniture at build time: yes (2026-11-11, `1718190143`: `VFE_WardrobeBase` →
+      `ArtableFurnitureBase`, no `thingClass`), so step 3 stays Add
+- [x] **Prove T15 Add VFE to a save.** VFE off: build 2 wardrobes, fill with 30 apparel each, set one to Normal, save.
       Enable VFE, restart, load. Pass: both wardrobes still exist with VFE's graphic, 60 items, one Normal and one
       Critical. *Failure mode:* a defName mismatch deletes wardrobes, or settings are lost.
-- [ ] **Prove T16 Remove VFE from a save.** VFE on: build 2 VFE wardrobes, fill, save. Disable VFE, restart, load. Pass:
+- [x] **Prove T16 Remove VFE from a save.** VFE on: build 2 VFE wardrobes, fill, save. Disable VFE, restart, load. Pass:
       both load as our copy with contents and settings; only harmless VFE warnings, no red errors from this mod.
       *Failure mode:* wardrobes lost, or red errors from leftover VFE data.
-- [ ] **Prove T17 Fresh game with VFE.** VFE on, new colony; open Architect › Furniture, build a wardrobe, check Loaded
+- [x] **Prove T17 Fresh game with VFE.** VFE on, new colony; open Architect › Furniture, build a wardrobe, check Loaded
       Files For Mod. Pass: exactly one wardrobe in the menu; it stores 30 apparel at Critical; NoVFE files aren't
       loaded. *Failure mode:* two wardrobe defs, a texture path collision, or wrong capacity.
+- T15 proved by run build `110fc64-dirty.20261111T011310Z`, T16 and T17 by `110fc64-dirty.20261111T010920Z` /
+  `…T010825Z` (each 1/1 PASS, 0 new errors; T15 and T16 in both halves). Names drop the plan's commas.
+- **Harness bug found by T17:** the harness wrote `ModsConfig.xml` ids as typed (`VanillaExpanded.VFECore`). The game
+  keeps them as written and looks them up lower-cased, so `IfModNotActive` loaded `NoVFE/` beside VFE (VFE's def won
+  only by loading later). The game saves ids lower-cased, so players aren't affected. `write_profile` now
+  lower-cases; every VFE baseline was re-recorded and T15–T17 rerun after the fix.
+- T16's VFE-off half logs 37 leftover-data signatures in any save (missing VEF/KCSG/MVCF/PipeSystem component
+  classes, VFE's `MF_*` research), none from this mod, ASF, Harmony or the furniture. The none → VFE transition
+  logs only the 6 engine signatures. `VANILLA_WARNINGS` in `autotest.py` stops two vanilla `Log.Warning` texts
+  counting as errors: `Could not find think node with key` (after adding VE Framework) and `Object with load ID …
+  not deep-saved` (a random world pawn in the builder's save).
+- Scenarios use `VfeActive` (`SamePackageId(…, ignorePostfix: true)`), also in T2; T2 rerun:
+  `110fc64-dirty.20261111T010053Z`, 1/1 PASS.
+- An instance launched from a save has no `-quicktest`; an in-game restart left it on the main menu, so a new build
+  now restarts it cold.
 
 ## Phase 6: Release
 

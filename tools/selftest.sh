@@ -87,7 +87,29 @@ unset FAKE_PREMOD_FAIL
 [[ ! -e "$MOD_DEVLOG/autotest/premod-manifest.txt" ]] \
   || { echo "FAIL  a failed --premod kept a manifest"; failures=$((failures + 1)); }
 expect 0 "1/1 PASS, 0 new error(s)" at run --no-build --from-save "${MOD_NAME,,}_premod" smoke
+expect 0 "1/1 PASS" at run --no-build --from-save "${MOD_NAME,,}_premod" smoke
+# A new build on an instance launched from a save (no -quicktest) restarts cold, never in game.
+echo "selftest.3" > "$MOD_DEVLOG/last-build"
+expect 0 "launched from a save: restarting cold" at run --no-build smoke
+echo "selftest.2" > "$MOD_DEVLOG/last-build"
 expect 3 "no save" at run --no-build --from-save no-such-save smoke
+# An extra-mod set gets its own baseline file; --switch-mods reruns on the handover save with the other set.
+mkdir -p "$SELF/extra/About"
+echo "<ModMetaData><packageId>fake.extra</packageId></ModMetaData>" > "$SELF/extra/About/About.xml"
+expect 0 "baseline-errors-fake-extra.txt" env MOD_EXTRA_MODS=fake.extra python3 -I "$HERE/autotest.py" baseline \
+  --min-seconds 2 --quiet-seconds 3
+[[ -f "$MOD_DEVLOG/baseline-errors.txt" ]] \
+  || { echo "FAIL  an extra-mod baseline replaced the default one"; failures=$((failures + 1)); }
+expect 0 "save made with: none" at baseline --switch-mods fake.extra --min-seconds 2 --quiet-seconds 3
+[[ -f "$MOD_DEVLOG/baseline-errors-none--to--fake-extra.txt" && ! -e "$MOD_DEVLOG/rwdata/Saves/autostart.rws" ]] \
+  || { echo "FAIL  baseline --switch-mods wrote no transition baseline or left an autostart save"; failures=$((failures + 1)); }
+expect 1 "no handover save" at run --no-build --switch-mods fake.extra smoke
+export FAKE_HANDOVER=1
+expect 0 "stopped Xvfb" at stop
+expect 0 "loaded save ${MOD_NAME,,}_handover" at run --no-build --switch-mods fake.extra smoke
+grep -q fake.extra "$MOD_DEVLOG/autotest/extra-mods" \
+  || { echo "FAIL  the second half didn't launch with the switched extra mods"; failures=$((failures + 1)); }
+unset FAKE_HANDOVER
 expect 0 "stopped Xvfb" at stop
 # Fresh launch with a failing scenario and a startup error the baseline knows (hidden) ...
 export FAKE_FAIL="Save and reload" FAKE_STARTUP_ERROR=1
