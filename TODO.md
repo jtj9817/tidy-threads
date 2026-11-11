@@ -31,6 +31,10 @@ prefix `TT_`, Harmony id `josh9817.tidythreads`. The plan's placeholders map lik
 - **Open questions for the user:** T11 failed in the release gate's sequence and passed alone (Phase 6). Should T11
   end colonists' current jobs when it builds its fixture and log the job's def, then rerun the gate's launch A? Or
   accept the solo PASS?
+- **Open bug [TT-001](docs/tickets/TT-001-apparel-lost-when-full-furniture-is-removed.md):** vanilla
+  `Building.DeSpawn` can silently lose stored apparel when a full dresser or wardrobe is removed with no free cells
+  nearby. Resolution decided (user, 2026-11-10): empty the furniture before it is deconstructed or reinstalled. This
+  needs C# beyond the converter, so the "C# has one job" decision must be updated first.
 - **Last run:** 2026-11-11 T15 rerun on the fresh none → VFE baseline: 1/1 PASS both halves (`docs/test-runs.md`). The game reports `rev600` since
   2026-11-11 (it was `rev598`).
 - **Environment (checked 2026-11-10):** game `1.6.4871 rev598`; Steam running; `dotnet`, `inkscape`, `Xvfb`, `xdotool`,
